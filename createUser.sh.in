@@ -21,11 +21,10 @@ useradd --no-log-init --no-create-home --uid "{{.uid}}" -s "/bin/bash" -c "{{.Na
 
 echo "{{.username}} ALL=NOPASSWD: ALL" >> /etc/sudoers.d/gocker
 
-homedir="$(dirname "{{.homedir}}")"
-echo "homedir: $homedir"
-mkdir -p "$homedir"
+echo "- create homedir: {{.homedir}}"
+mkdir -pv "{{.homedir}}"
 mkhomedir_helper {{.username}}
-chown {{.uid}}:{{.ugid}} "$homedir"
+chown {{.uid}}:{{.ugid}} "{{.homedir}}"
 
 echo "- done!"
 if [ $# -eq 0 ]

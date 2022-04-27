@@ -2,10 +2,9 @@ package main
 
 import (
 	_ "embed"
+	"flag"
 	"fmt"
 	"github.com/google/shlex"
-	// flag "github.com/spf13/pflag"
-	"flag"
 	"os"
 	"os/exec"
 	"os/user"
@@ -14,39 +13,47 @@ import (
 	"text/template"
 )
 
+// TODO: add note on why flags need to be placed after dogi
+// the reason is related to the example:
+// dogi run ubuntu bash -c "sudo apt install -y x11-apps && xeyes"
+// in this case, "-c" will be parsed by the flag lib
+// it's either after dogi or completely ignore non declared flag errors
 const (
-	usage = `usage: %s
+	appname = "dogi"
+	usage   = `usage: {{.appname}}
 
-dogi is a minimalist wrapper for docker run and docker exec to
+{{.appname}} is a minimalist wrapper for docker run and docker exec to
 easily launch containers while sharing the working directory and
 use GUI applications.
 
 Usage:
 
-dogi run docker-image [command] [--no-user] [--workdir=/absolute/path] [--home]
+{{.appname}} [-flags] run docker-image [command]
 
-dogi exec [docker-image|docker-container] [--no-user] [--workdir=/absolute/path]
+{{.appname}} [-flags] exec [docker-image|docker-container]
 
-dogi --version
+{{.appname}} --version
 
-dogi --help
+{{.appname}} --help
+
+NOTE: optional -flags must be placed right after {{.appname}}
 
 Examples:
 
 - Launch a container capable of GUI applications
 
-dogi run ubuntu
+{{.appname}} run ubuntu
 
 - Launch a GUI command inside a container
 xeyes is not installed in the ubuntu image by default.
 
-dogi run ubuntu bash -c "sudo apt install -y x11-apps && xeyes"
+{{.appname}} run ubuntu bash -c "sudo apt install -y x11-apps && xeyes"
 
 - Launch an 3d accelerated GUI (opengl)
 
-dogi run ubuntu bash -c "sudo apt install -y mesa-utils && glxgears"
+{{.appname}} run ubuntu bash -c "sudo apt install -y mesa-utils && glxgears"
 
-Flags:
+Optional Flags:
 `
 )
 
@@ -73,15 +80,16 @@ func concat(ss ...[]string) (s string) {
 }
 
 func main() {
-
 	cwd, err := os.Getwd()
 	check(err)
 	noUserPtr := flag.Bool("no-user", false, "don't create user inside container (run as root inside)")
-	versionPtr := flag.Bool("version", false, "show dogi version")
+	versionPtr := flag.Bool("version", false, "show version")
 	homePtr := flag.Bool("home", false, "mount your complete home directory")
 	workDirPtr := flag.String("workdir", cwd, "working directory when launching the container, will be mounted inside")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, usage, os.Args[0])
+		err := template.Must(template.New("").Option("missingkey=error").Parse(usage)).Execute(os.Stderr,
+			map[string]string{"appname": appname})
+		check(err)
 		flag.PrintDefaults()
 	}
 
@@ -93,8 +101,7 @@ func main() {
 	fmt.Println("*noUserPtr:", *noUserPtr)
 
 	if *versionPtr {
-		fmt.Println("dogi dev version")
-		defer fmt.Println("deferred!")
+		fmt.Printf("%s dev version\n", appname)
 		return
 	}
 
@@ -114,7 +121,7 @@ func main() {
 		syscall.Exit(1)
 	}
 
-	// find docker path
+	// find docker path for the exec command
 	const dockerCmd string = "docker"
 	dockerCmdPath, err := exec.LookPath(dockerCmd)
 	fmt.Println("docker cmd: ", dockerCmdPath)
@@ -125,14 +132,19 @@ func main() {
 		fmt.Sprintf("--workdir=%s", *workDirPtr),
 	}
 
-	entrypoint := " bash"
+	// argument to be executed
+	// (right after docker run or docker exec)
+	entrypoint := ""
 
 	switch command {
+	// ********************************************************
+	// ********************************************************
 	case "exec":
 		fmt.Println("\nError: sorry not implemented yet!")
 		return
 
-	// ************************************************************
+	// ********************************************************
+	// ********************************************************
 	case "run":
 
 		fmt.Println("flag.NArg():", flag.NArg())
@@ -148,7 +160,7 @@ func main() {
 		check(err)
 
 		// create xauth magic cookie file
-		xauthfile, err := os.CreateTemp("", ".dogi*.xauth")
+		xauthfile, err := os.CreateTemp("", fmt.Sprintf(".%s*.xauth", appname))
 		check(err)
 		fmt.Println("temp file:", xauthfile.Name())
 		// TODO: xauth file won't be removed because
@@ -232,39 +244,41 @@ func main() {
 		}...)
 		dockerRunArgs = append(dockerRunArgs, mountStrs...)
 
+		// figure out the command to execute (image default or provided)
+		fmt.Println("flag.Args():", flag.Args())
+		fmt.Println("flag.Args()[2:]:", flag.Args()[2:])
+		execCommand := flag.Args()[2:]
+		// protect quoted arguments
+		for k, val := range execCommand {
+			execCommand[k] = "'" + val + "'"
+		}
+		execCommandStr := " "
+		if len(execCommand) == 0 {
+			// no command was provided, use image CMD
+			out, err := exec.Command("docker",
+				"inspect", "-f", "'{{.Config.Cmd}}'", imageName).Output()
+			check(err)
+			imageCmd := strings.Trim(strings.TrimSpace(string(out[:])), "'[]")
+			fmt.Println("imageCmd:", imageCmd)
+			if imageCmd != "" {
+				execCommandStr += imageCmd
+			} else {
+				fmt.Printf("%s has no CMD command? please report this as an issue!\n",
+					imageName)
+				execCommandStr += "bash"
+			}
+		} else {
+			execCommandStr += strings.Join(execCommand, " ")
+		}
+		fmt.Println("execCommandStr:", execCommandStr)
+		entrypoint = execCommandStr
+
 		// create user script
 		if !*noUserPtr {
-			// if changing to user, need to find out the command
-			fmt.Println("flag.Args():", flag.Args())
-			fmt.Println("flag.Args()[2:]:", flag.Args()[2:])
-			execCommand := flag.Args()[2:]
-			// protect quoted arguments
-			for k, val := range execCommand {
-				execCommand[k] = "'" + val + "'"
-			}
-			execCommandStr := " "
-			if len(execCommand) == 0 {
-				// no command was provided, use image CMD
-				out, err := exec.Command("docker",
-					"inspect", "-f", "'{{.Config.Cmd}}'", imageName).Output()
-				check(err)
-				imageCmd := strings.Trim(strings.TrimSpace(string(out[:])), "'[]")
-				fmt.Println("imageCmd:", imageCmd)
-				if imageCmd != "" {
-					execCommandStr += imageCmd
-				} else {
-					fmt.Printf("%s has no CMD command? please report this as an issue!\n",
-						imageName)
-					execCommandStr += "bash"
-				}
-			} else {
-				execCommandStr += strings.Join(execCommand, " ")
-			}
-			fmt.Println("execCommandStr:", execCommandStr)
-
 			// TODO: createUser file won't be removed because
 			// process is replaced at Exec, is there a way?
-			createUserFile, err := os.CreateTemp("", ".dogi_create_user*.sh")
+			createUserFile, err := os.CreateTemp("",
+				fmt.Sprintf(".%s*.sh", appname))
 			check(err)
 			fmt.Println("createUserFile:", createUserFile.Name())
 			{
@@ -278,15 +292,18 @@ func main() {
 					})
 				check(err)
 			}
-			const createUserScriptPath = "/dogi_create_user.sh"
+			const createUserScriptPath = "/" + appname + "_create_user.sh"
 			dockerRunArgs = append(dockerRunArgs,
 				fmt.Sprintf("-v %s:%s", createUserFile.Name(),
 					createUserScriptPath))
-			entrypoint = fmt.Sprintf(" bash -c \"bash %s %s\"",
+			entrypoint = fmt.Sprintf("bash -c \"bash %s %s\"",
 				createUserScriptPath, execCommandStr)
 		}
 
 		dockerRunArgs = append(dockerRunArgs, imageName)
+		// run command end
+		// ********************************************************
+		// ********************************************************
 	}
 	fmt.Println("entrypoint:", entrypoint)
 
@@ -294,7 +311,9 @@ func main() {
 		dockerRunArgs,
 		[]string{entrypoint})
 	fmt.Println("docker cmd: ", dockerArgsStr)
-	dockerArgs, err := shlex.Split(dockerArgsStr + entrypoint)
+	dockerArgs, err := shlex.Split(dockerArgsStr + " " + entrypoint)
 	check(err)
+
+	// syscall exec is used to replace the current process
 	syscall.Exec(dockerCmdPath, dockerArgs, os.Environ())
 }
