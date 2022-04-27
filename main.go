@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/google/shlex"
+	"log"
 	"os"
 	"os/exec"
 	"os/user"
@@ -19,8 +20,9 @@ import (
 // in this case, "-c" will be parsed by the flag lib
 // it's either after dogi or completely ignore non declared flag errors
 const (
-	appname = "dogi"
-	usage   = `usage: {{.appname}}
+	appname   = "dogi"
+	githubUrl = "github.com/ntorresalberto/dogi"
+	usage     = `usage: {{.appname}}
 
 {{.appname}} is a minimalist wrapper for docker run and docker exec to
 easily launch containers while sharing the working directory and
@@ -58,6 +60,7 @@ Optional Flags:
 )
 
 var (
+	logger        = log.New(os.Stdout, appname+".", log.Lshortfile)
 	validCommands = [...]string{"run", "exec"}
 	//go:embed createUser.sh.in
 	createUserTemplate string
@@ -94,16 +97,17 @@ func main() {
 	}
 
 	flag.Parse()
-	fmt.Println("tail:", flag.Args())
-	fmt.Println("*workDirPtr:", *workDirPtr)
-	fmt.Println("*homePtr:", *homePtr)
-	fmt.Println("*versionPtr:", *versionPtr)
-	fmt.Println("*noUserPtr:", *noUserPtr)
 
 	if *versionPtr {
 		fmt.Printf("%s dev version\n", appname)
+		fmt.Println(githubUrl)
 		return
 	}
+
+	logger.Println("tail:", flag.Args())
+	logger.Println("*workDirPtr:", *workDirPtr)
+	logger.Println("*homePtr:", *homePtr)
+	logger.Println("*noUserPtr:", *noUserPtr)
 
 	// validate arguments
 	validCommand := false
@@ -116,7 +120,7 @@ func main() {
 	}
 	if command == "" || !validCommand {
 		flag.Usage()
-		fmt.Printf("\nError: please provide a valid command: %s \n",
+		logger.Printf("\nError: please provide a valid command: %s \n",
 			strings.Join(validCommands[:], ", "))
 		syscall.Exit(1)
 	}
@@ -124,7 +128,7 @@ func main() {
 	// find docker path for the exec command
 	const dockerCmd string = "docker"
 	dockerCmdPath, err := exec.LookPath(dockerCmd)
-	fmt.Println("docker cmd: ", dockerCmdPath)
+	logger.Println("docker cmd: ", dockerCmdPath)
 	check(err)
 
 	dockerRunArgs := []string{
@@ -140,17 +144,17 @@ func main() {
 	// ********************************************************
 	// ********************************************************
 	case "exec":
-		fmt.Println("\nError: sorry not implemented yet!")
+		logger.Println("Error: sorry not implemented yet!")
 		return
 
 	// ********************************************************
 	// ********************************************************
 	case "run":
 
-		fmt.Println("flag.NArg():", flag.NArg())
+		logger.Println("flag.NArg():", flag.NArg())
 		if flag.NArg() < 2 {
 			flag.Usage()
-			fmt.Println("\nError: docker image name not provided!")
+			logger.Println("Error: docker image name not provided!")
 			syscall.Exit(1)
 		}
 		imageName := flag.Arg(1)
@@ -162,7 +166,7 @@ func main() {
 		// create xauth magic cookie file
 		xauthfile, err := os.CreateTemp("", fmt.Sprintf(".%s*.xauth", appname))
 		check(err)
-		fmt.Println("temp file:", xauthfile.Name())
+		logger.Println("temp file:", xauthfile.Name())
 		// TODO: xauth file won't be removed because
 		// process is replaced at Exec, is there a way?
 		// defer os.Remove(xauthfile.Name())
@@ -175,38 +179,37 @@ func main() {
 		if !ok {
 			panic(fmt.Errorf("%s not set\n", displayEnvVar))
 		}
-		fmt.Println("env DISPLAY:", displayEnv)
+		logger.Println("env DISPLAY:", displayEnv)
 
 		xauthCmd := fmt.Sprintf("%s nlist %s | sed -e 's/^..../ffff/' | %s -f %s nmerge -",
 			xauthCmdPath, displayEnv, xauthCmdPath, xauthfile.Name())
-		fmt.Println("xauth cmd:", xauthCmd)
+		logger.Println("xauth cmd:", xauthCmd)
 
 		createXauthCmd := exec.Command(bashCmdPath, "-c", xauthCmd)
 		check(createXauthCmd.Run())
 
 		userObj, err := user.Current()
 		check(err)
-		fmt.Println("username:", userObj.Username)
-		fmt.Println("    name:", userObj.Name)
-		fmt.Println("user uid:", userObj.Uid)
-		fmt.Println("user gid:", userObj.Gid)
-		fmt.Println("    home:", userObj.HomeDir)
-		fmt.Println("  groups:")
+		logger.Println("username:", userObj.Username)
+		logger.Println("    name:", userObj.Name)
+		logger.Println("user uid:", userObj.Uid)
+		logger.Println("user gid:", userObj.Gid)
+		logger.Println("    home:", userObj.HomeDir)
+		logger.Println("  groups:")
 		relevantGroups := map[string]string{"video": "", userObj.Username: ""}
 		groupIds, err := userObj.GroupIds()
 		check(err)
 		for k := range groupIds {
-			fmt.Printf("    ")
 			gid := groupIds[k]
 			group, err := user.LookupGroupId(gid)
 			if err != nil {
-				fmt.Printf("- gid %s not found\n", gid)
+				logger.Printf("    - gid %s not found\n", gid)
 				continue
 			}
 			if _, ok := relevantGroups[group.Name]; ok {
 				relevantGroups[group.Name] = group.Gid
 			}
-			fmt.Printf("- %s (%s)\n", group.Name, group.Gid)
+			logger.Printf("    - %s (%s)\n", group.Name, group.Gid)
 		}
 		// check gid where found
 		createGroupsCmd := ""
@@ -226,7 +229,7 @@ func main() {
 
 		mountStrs := []string{fmt.Sprintf("-v %s:%s", *workDirPtr, *workDirPtr)}
 		if *homePtr {
-			fmt.Println("mounting home directory")
+			logger.Println("mounting home directory")
 			mountStrs = append(mountStrs, fmt.Sprintf("-v %s:%s", userObj.HomeDir, userObj.HomeDir))
 		}
 
@@ -245,8 +248,8 @@ func main() {
 		dockerRunArgs = append(dockerRunArgs, mountStrs...)
 
 		// figure out the command to execute (image default or provided)
-		fmt.Println("flag.Args():", flag.Args())
-		fmt.Println("flag.Args()[2:]:", flag.Args()[2:])
+		logger.Println("flag.Args():", flag.Args())
+		logger.Println("flag.Args()[2:]:", flag.Args()[2:])
 		execCommand := flag.Args()[2:]
 		// protect quoted arguments
 		for k, val := range execCommand {
@@ -259,18 +262,18 @@ func main() {
 				"inspect", "-f", "'{{.Config.Cmd}}'", imageName).Output()
 			check(err)
 			imageCmd := strings.Trim(strings.TrimSpace(string(out[:])), "'[]")
-			fmt.Println("imageCmd:", imageCmd)
+			logger.Println("imageCmd:", imageCmd)
 			if imageCmd != "" {
 				execCommandStr += imageCmd
 			} else {
-				fmt.Printf("%s has no CMD command? please report this as an issue!\n",
+				logger.Printf("%s has no CMD command? please report this as an issue!\n",
 					imageName)
 				execCommandStr += "bash"
 			}
 		} else {
 			execCommandStr += strings.Join(execCommand, " ")
 		}
-		fmt.Println("execCommandStr:", execCommandStr)
+		logger.Println("execCommandStr:", execCommandStr)
 		entrypoint = execCommandStr
 
 		// create user script
@@ -280,7 +283,7 @@ func main() {
 			createUserFile, err := os.CreateTemp("",
 				fmt.Sprintf(".%s*.sh", appname))
 			check(err)
-			fmt.Println("createUserFile:", createUserFile.Name())
+			logger.Println("createUserFile:", createUserFile.Name())
 			{
 				err := template.Must(template.New("").Option("missingkey=error").Parse(createUserTemplate)).Execute(createUserFile,
 					map[string]string{"username": userObj.Username,
@@ -305,12 +308,12 @@ func main() {
 		// ********************************************************
 		// ********************************************************
 	}
-	fmt.Println("entrypoint:", entrypoint)
+	logger.Println("entrypoint:", entrypoint)
 
 	dockerArgsStr := concat([]string{dockerCmd, command},
 		dockerRunArgs,
 		[]string{entrypoint})
-	fmt.Println("docker cmd: ", dockerArgsStr)
+	logger.Println("docker cmd: ", dockerArgsStr)
 	dockerArgs, err := shlex.Split(dockerArgsStr + " " + entrypoint)
 	check(err)
 
