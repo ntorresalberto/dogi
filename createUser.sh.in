@@ -1,0 +1,38 @@
+set -e
+
+echo "- running apt update..."
+DEBIAN_FRONTEND=noninteractive apt-get -qq update > /dev/null
+echo "- installing sudo..."
+DEBIAN_FRONTEND=noninteractive apt-get -qq install sudo vim > /dev/null
+
+echo "- creating user..."
+existing_user_by_uid=`getent passwd "1000" | cut -f1 -d: || true`
+if [ -n "${existing_user_by_uid}" ]; then userdel -r "${existing_user_by_uid}"; fi
+
+existing_user_by_name=`getent passwd "{{.username}}" | cut -f1 -d: || true`
+existing_user_uid=`getent passwd "{{.username}}" | cut -f3 -d: || true`
+if [ -n "${existing_user_by_name}" ]; then find / -uid ${existing_user_uid} -exec chown -h {{.uid}} {} + || true ; find / -gid ${existing_user_uid} -exec chgrp -h {{.ugid}} {} + || true ; fi
+if [ -n "${existing_user_by_name}" ]; then userdel -r "${existing_user_by_name}"; fi
+
+existing_group_by_gid=`getent group "1000" | cut -f1 -d: || true`
+if [ -z "${existing_group_by_gid}" ]; then groupadd -g "{{.ugid}}" "{{.username}}"; fi
+
+useradd --no-log-init --no-create-home --uid "{{.uid}}" -s "/bin/bash" -c "{{.Name}}" -g "{{.ugid}}" -G "{{.gids}}" -d "{{.homedir}}" "{{.username}}"
+
+echo "{{.username}} ALL=NOPASSWD: ALL" >> /etc/sudoers.d/gocker
+
+homedir="$(dirname "{{.homedir}}")"
+echo "homedir: $homedir"
+mkdir -p "$homedir"
+mkhomedir_helper {{.username}}
+chown {{.uid}}:{{.ugid}} "$homedir"
+
+echo "- done!"
+if [ $# -eq 0 ]
+then
+    echo "- switch to user {{.username}}"
+    sudo -u {{.username}} bash
+else
+    echo "- run as user: $@"
+    sudo -u {{.username}} -- "$@"
+fi
