@@ -1,3 +1,4 @@
+![dogi](https://user-images.githubusercontent.com/63748204/165713084-59b79373-7c7f-4309-86ce-6991230f8fbb.png)
 # dogi
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ntorresalberto/dogi.svg)](https://pkg.go.dev/github.com/ntorresalberto/dogi)
