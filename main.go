@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"flag"
 	"fmt"
-	"github.com/google/shlex"
 	"log"
 	"os"
 	"os/exec"
@@ -72,16 +71,14 @@ func check(e error) {
 	}
 }
 
-func concat(ss ...[]string) (s string) {
-	sa := []string{}
+func merge(ss ...[]string) (s []string) {
 	for kss := range ss {
 		for k := range ss[kss] {
-			sa = append(sa, ss[kss][k])
+			s = append(s, ss[kss][k])
 		}
 	}
-	return strings.Join(sa, " ")
+	return
 }
-
 func main() {
 	cwd, err := os.Getwd()
 	check(err)
@@ -127,18 +124,19 @@ func main() {
 
 	// find docker path for the exec command
 	const dockerCmd string = "docker"
-	dockerCmdPath, err := exec.LookPath(dockerCmd)
-	logger.Println("docker cmd: ", dockerCmdPath)
+	dockerBinPath, err := exec.LookPath(dockerCmd)
+	logger.Println("docker bin: ", dockerBinPath)
 	check(err)
 
 	dockerRunArgs := []string{
-		"-it",
+		"--interactive",
+		"--tty",
 		fmt.Sprintf("--workdir=%s", *workDirPtr),
 	}
 
 	// argument to be executed
 	// (right after docker run or docker exec)
-	entrypoint := ""
+	entrypoint := []string{}
 
 	switch command {
 	// ********************************************************
@@ -227,23 +225,23 @@ func main() {
 			}
 		}
 
-		mountStrs := []string{fmt.Sprintf("-v %s:%s", *workDirPtr, *workDirPtr)}
+		mountStrs := []string{fmt.Sprintf("--volume=%s:%s", *workDirPtr, *workDirPtr)}
 		if *homePtr {
 			logger.Println("mounting home directory")
-			mountStrs = append(mountStrs, fmt.Sprintf("-v %s:%s", userObj.HomeDir, userObj.HomeDir))
+			mountStrs = append(mountStrs, fmt.Sprintf("--volume=%s:%s", userObj.HomeDir, userObj.HomeDir))
 		}
 
 		dockerRunArgs = append(dockerRunArgs, []string{
 			"--rm",
-			"--network host",
-			"-v /tmp/.X11-unix:/tmp/.X11-unix",
-			fmt.Sprintf("-v %s:/.xauth", xauthfile.Name()),
-			"-e XAUTHORITY=/.xauth",
-			"-e DISPLAY",
-			"-e TERM",
-			"-e QT_X11_NO_MITSHM=1",
-			"-v /etc/localtime:/etc/localtime:ro",
-			"--device /dev/dri",
+			"--network=host",
+			"--volume=/tmp/.X11-unix:/tmp/.X11-unix",
+			fmt.Sprintf("--volume=%s:/.xauth", xauthfile.Name()),
+			"--env=XAUTHORITY=/.xauth",
+			"--env=QT_X11_NO_MITSHM=1",
+			"--env=DISPLAY",
+			"--env=TERM",
+			"--volume=/etc/localtime:/etc/localtime:ro",
+			"--device=/dev/dri",
 		}...)
 		dockerRunArgs = append(dockerRunArgs, mountStrs...)
 
@@ -251,30 +249,23 @@ func main() {
 		logger.Println("flag.Args():", flag.Args())
 		logger.Println("flag.Args()[2:]:", flag.Args()[2:])
 		execCommand := flag.Args()[2:]
-		// protect quoted arguments
-		for k, val := range execCommand {
-			execCommand[k] = "'" + val + "'"
-		}
-		execCommandStr := " "
 		if len(execCommand) == 0 {
 			// no command was provided, use image CMD
 			out, err := exec.Command("docker",
-				"inspect", "-f", "'{{.Config.Cmd}}'", imageName).Output()
+				"inspect", "-f", "'{{join .Config.Cmd \",\"}}'", imageName).Output()
 			check(err)
-			imageCmd := strings.Trim(strings.TrimSpace(string(out[:])), "'[]")
-			logger.Println("imageCmd:", imageCmd)
-			if imageCmd != "" {
-				execCommandStr += imageCmd
-			} else {
+			execCommand = strings.Split(strings.Trim(strings.TrimSpace(string(out[:])),
+				"'"), ",")
+			logger.Println("imageCmd: [", strings.Join(execCommand, ", "), "]")
+			if len(execCommand) == 0 {
 				logger.Printf("%s has no CMD command? please report this as an issue!\n",
 					imageName)
-				execCommandStr += "bash"
+				execCommand = []string{"bash"}
 			}
-		} else {
-			execCommandStr += strings.Join(execCommand, " ")
 		}
+		execCommandStr := strings.Join(execCommand, " ")
 		logger.Println("execCommandStr:", execCommandStr)
-		entrypoint = execCommandStr
+		entrypoint = execCommand
 
 		// create user script
 		if !*noUserPtr {
@@ -297,10 +288,9 @@ func main() {
 			}
 			const createUserScriptPath = "/" + appname + "_create_user.sh"
 			dockerRunArgs = append(dockerRunArgs,
-				fmt.Sprintf("-v %s:%s", createUserFile.Name(),
+				fmt.Sprintf("--volume=%s:%s", createUserFile.Name(),
 					createUserScriptPath))
-			entrypoint = fmt.Sprintf("bash -c \"bash %s %s\"",
-				createUserScriptPath, execCommandStr)
+			entrypoint = merge([]string{"bash", createUserScriptPath}, execCommand)
 		}
 
 		dockerRunArgs = append(dockerRunArgs, imageName)
@@ -310,13 +300,16 @@ func main() {
 	}
 	logger.Println("entrypoint:", entrypoint)
 
-	dockerArgsStr := concat([]string{dockerCmd, command},
+	dockerArgs := merge([]string{dockerCmd, command},
 		dockerRunArgs,
-		[]string{entrypoint})
-	logger.Println("docker cmd: ", dockerArgsStr)
-	dockerArgs, err := shlex.Split(dockerArgsStr + " " + entrypoint)
-	check(err)
+		entrypoint)
+	logger.Println("dockerArgs: [", strings.Join(dockerArgs, ", "), "]")
+	for k := range dockerArgs {
+		fmt.Println(k, dockerArgs[k])
+	}
+
+	logger.Println("docker cmd: ", strings.Join(merge(dockerArgs), " "))
 
 	// syscall exec is used to replace the current process
-	syscall.Exec(dockerCmdPath, dockerArgs, os.Environ())
+	syscall.Exec(dockerBinPath, dockerArgs, os.Environ())
 }

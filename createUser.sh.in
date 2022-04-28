@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 set -e
 
 echo "- running apt update..."
@@ -30,8 +31,14 @@ echo "- done!"
 if [ $# -eq 0 ]
 then
     echo "- switch to user {{.username}}"
-    sudo -u {{.username}} bash
-else
-    echo "- run as user: $@"
-    sudo -u {{.username}} -- "$@"
+    sudo -Hu {{.username}} bash
 fi
+echo "- run as user: $@"
+sudo -Hu {{.username}} "$@"
+
+# TODO: remove these used in tests
+# echo "- run as user: $*"
+# echo "- run as user: ${*@Q}"
+# echo "- run as user: ${@@Q}"
+# sudo -Hu {{.username}} bash -c "$@"
+# exec su {{.username}} - '$*'
