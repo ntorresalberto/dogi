@@ -65,6 +65,10 @@ var (
 	createUserTemplate string
 )
 
+func createGroupCommand(gid, groupName string) string {
+	return fmt.Sprintf("groupadd --gid %s %s", gid, groupName)
+}
+
 func check(e error) {
 	if e != nil {
 		panic(e)
@@ -101,10 +105,10 @@ func main() {
 		return
 	}
 
-	logger.Println("tail:", flag.Args())
-	logger.Println("*workDirPtr:", *workDirPtr)
-	logger.Println("*homePtr:", *homePtr)
-	logger.Println("*noUserPtr:", *noUserPtr)
+	// logger.Println("tail:", flag.Args())
+	// logger.Println("*workDirPtr:", *workDirPtr)
+	// logger.Println("*homePtr:", *homePtr)
+	// logger.Println("*noUserPtr:", *noUserPtr)
 
 	// validate arguments
 	validCommand := false
@@ -148,8 +152,6 @@ func main() {
 	// ********************************************************
 	// ********************************************************
 	case "run":
-
-		logger.Println("flag.NArg():", flag.NArg())
 		if flag.NArg() < 2 {
 			flag.Usage()
 			logger.Println("Error: docker image name not provided!")
@@ -177,11 +179,10 @@ func main() {
 		if !ok {
 			panic(fmt.Errorf("%s not set\n", displayEnvVar))
 		}
-		logger.Println("env DISPLAY:", displayEnv)
 
 		xauthCmd := fmt.Sprintf("%s nlist %s | sed -e 's/^..../ffff/' | %s -f %s nmerge -",
 			xauthCmdPath, displayEnv, xauthCmdPath, xauthfile.Name())
-		logger.Println("xauth cmd:", xauthCmd)
+		// logger.Println("xauth cmd:", xauthCmd)
 
 		createXauthCmd := exec.Command(bashCmdPath, "-c", xauthCmd)
 		check(createXauthCmd.Run())
@@ -193,35 +194,24 @@ func main() {
 		logger.Println("user uid:", userObj.Uid)
 		logger.Println("user gid:", userObj.Gid)
 		logger.Println("    home:", userObj.HomeDir)
-		logger.Println("  groups:")
-		relevantGroups := map[string]string{"video": "", userObj.Username: ""}
+		createGroupsCmd := createGroupCommand(userObj.Gid, userObj.Username)
+		toAddGroups := map[string]string{"video": ""}
 		groupIds, err := userObj.GroupIds()
 		check(err)
+		toAddGids := []string{}
+		// logger.Println("  groups:")
 		for k := range groupIds {
 			gid := groupIds[k]
 			group, err := user.LookupGroupId(gid)
 			if err != nil {
 				logger.Printf("    - gid %s not found\n", gid)
-				continue
+				panic(err)
 			}
-			if _, ok := relevantGroups[group.Name]; ok {
-				relevantGroups[group.Name] = group.Gid
-			}
-			logger.Printf("    - %s (%s)\n", group.Name, group.Gid)
-		}
-		// check gid where found
-		createGroupsCmd := ""
-		relevantGroupsIds := []string{}
-		for key, val := range relevantGroups {
-			if val == "" {
-				panic(fmt.Errorf("user group '%s' not found", key))
-			}
-			temp := fmt.Sprintf("groupadd -g %s %s", val, key)
-			relevantGroupsIds = append(relevantGroupsIds, val)
-			if createGroupsCmd == "" {
-				createGroupsCmd = temp
-			} else {
-				createGroupsCmd += " && " + temp
+			// logger.Printf("    - %s (%s)\n", group.Name, group.Gid)
+			if _, ok := toAddGroups[group.Name]; ok {
+				toAddGroups[group.Name] = group.Gid
+				toAddGids = append(toAddGids, group.Gid)
+				createGroupsCmd += " && " + createGroupCommand(group.Gid, group.Name)
 			}
 		}
 
@@ -253,7 +243,10 @@ func main() {
 			// no command was provided, use image CMD
 			out, err := exec.Command("docker",
 				"inspect", "-f", "'{{join .Config.Cmd \",\"}}'", imageName).Output()
-			check(err)
+			if err != nil {
+				logger.Fatalf("docker inspect %s failed, image doesn't exist?", imageName)
+			}
+
 			execCommand = strings.Split(strings.Trim(strings.TrimSpace(string(out[:])),
 				"'"), ",")
 			logger.Println("imageCmd: [", strings.Join(execCommand, ", "), "]")
@@ -281,7 +274,7 @@ func main() {
 						"homedir": userObj.HomeDir,
 						"uid":     userObj.Uid,
 						"ugid":    userObj.Gid,
-						"gids":    strings.Join(relevantGroupsIds, ","),
+						"gids":    strings.Join(toAddGids, ","),
 						"Name":    userObj.Name,
 					})
 				check(err)
@@ -303,12 +296,7 @@ func main() {
 	dockerArgs := merge([]string{dockerCmd, command},
 		dockerRunArgs,
 		entrypoint)
-	logger.Println("dockerArgs: [", strings.Join(dockerArgs, ", "), "]")
-	for k := range dockerArgs {
-		fmt.Println(k, dockerArgs[k])
-	}
-
-	logger.Println("docker cmd: ", strings.Join(merge(dockerArgs), " "))
+	logger.Println("docker command: ", strings.Join(merge(dockerArgs), " "))
 
 	// syscall exec is used to replace the current process
 	syscall.Exec(dockerBinPath, dockerArgs, os.Environ())
