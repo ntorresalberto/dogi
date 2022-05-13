@@ -59,7 +59,7 @@ Optional Flags:
 )
 
 var (
-	logger        = log.New(os.Stdout, appname+".", log.Lshortfile)
+	logger        = log.New(os.Stdout, appname+": ", log.Lshortfile)
 	validCommands = [...]string{"run", "exec"}
 	//go:embed createUser.sh.in
 	createUserTemplate string
@@ -166,7 +166,7 @@ func main() {
 		// create xauth magic cookie file
 		xauthfile, err := os.CreateTemp("", fmt.Sprintf(".%s*.xauth", appname))
 		check(err)
-		logger.Println("temp file:", xauthfile.Name())
+		logger.Println("temp xauth file:", xauthfile.Name())
 		// TODO: xauth file won't be removed because
 		// process is replaced at Exec, is there a way?
 		// defer os.Remove(xauthfile.Name())
@@ -236,8 +236,8 @@ func main() {
 		dockerRunArgs = append(dockerRunArgs, mountStrs...)
 
 		// figure out the command to execute (image default or provided)
-		logger.Println("flag.Args():", flag.Args())
-		logger.Println("flag.Args()[2:]:", flag.Args()[2:])
+		// logger.Println("flag.Args():", flag.Args())
+		// logger.Println("flag.Args()[2:]:", flag.Args()[2:])
 		execCommand := flag.Args()[2:]
 		if len(execCommand) == 0 {
 			// no command was provided, use image CMD
@@ -267,7 +267,7 @@ func main() {
 			createUserFile, err := os.CreateTemp("",
 				fmt.Sprintf(".%s*.sh", appname))
 			check(err)
-			logger.Println("createUserFile:", createUserFile.Name())
+			logger.Println("create user script:", createUserFile.Name())
 			{
 				err := template.Must(template.New("").Option("missingkey=error").Parse(createUserTemplate)).Execute(createUserFile,
 					map[string]string{"username": userObj.Username,
