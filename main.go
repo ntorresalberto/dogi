@@ -195,6 +195,8 @@ func main() {
 		logger.Println("user gid:", userObj.Gid)
 		logger.Println("    home:", userObj.HomeDir)
 		createGroupsCmd := createGroupCommand(userObj.Gid, userObj.Username)
+		// TODO: apparently you can use --group-add video from docker run?
+		// http://wiki.ros.org/docker/Tutorials/Hardware%20Acceleration#ATI.2FAMD
 		toAddGroups := map[string]string{"video": ""}
 		groupIds, err := userObj.GroupIds()
 		check(err)
