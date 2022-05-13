@@ -4,7 +4,8 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/ntorresalberto/dogi.svg)](https://pkg.go.dev/github.com/ntorresalberto/dogi)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ntorresalberto/dogi)](https://goreportcard.com/report/github.com/ntorresalberto/dogi)
 
-**dogi** is a [simple and transparent](#design-principles) wrapper for `docker run` (and `docker exec`) to easily launch containers while sharing the working directory and use GUI applications.
+**dogi** is a [simple and transparent](#design-principles) wrapper for `docker run` (and `docker exec`) to make common tasks easier.
+It allows using rootless containers, running GUIs, quickly mounting your current directory and much more!
 
 Even though **dogi** was originally inspired by [rocker](https://github.com/osrf/rocker) and solves a similar problem (or the same), it aims to do so with minimum user effort. Additionally, it provides the ability to interact with the `docker` client directly ([transparent](#design-principles)).
 
@@ -63,10 +64,10 @@ You should find **dogi** useful if you:
 
 ### Design principles
 
+- **transparent**: **dogi** forwards any unrecognized arguments to docker, in case you ever need to do anything not currently supported.
 - **simple**: aims to cover the most common use cases with the least user intervention (you shouldn't need to pass any extra flags/options most of the time). If you don't agree with the defaults, [please say so](https://github.com/ntorresalberto/dogi/issues/new).
 - **secure**: there are [many ways](http://wiki.ros.org/docker/Tutorials/GUI) to expose the xorg server to containers, **dogi** tries to do it in the most secure way. Additionally, it proposes an easy way to avoid the potentially dangerous practice of root containers. 
 - **minimalist**: **dogi** thrives to have the least amount of dependencies and not do more than it needs.
-- **transparent**: **dogi** forwards any unrecognized arguments to docker, in case you ever need to do anything not currently supported.
 
 > Many (open source) hackers are proud if they achieve large amounts of code, because they believe the more lines of code they've written, the more progress they have made. The more progress they have made, the more skilled they are. This is simply a delusion.
 
