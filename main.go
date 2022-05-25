@@ -214,10 +214,13 @@ func main() {
 		}
 	}
 	if command == "" || !validCommand {
-		flag.Usage()
-		fmt.Printf("\nError: please provide a valid command: %s \n",
-			strings.Join(validCommands[:], ", "))
-		syscall.Exit(1)
+		prompt := promptui.Select{
+			Label: "Please provide a valid command",
+			Items: validCommands[:],
+		}
+		_, result, err := prompt.Run()
+		check(err)
+		command = result
 	}
 
 	// find docker path for the exec command
@@ -310,13 +313,9 @@ func main() {
 			}
 
 			_, result, err := prompt.Run()
+			check(err)
 
-			if err != nil {
-				fmt.Printf("Prompt failed %v\n", err)
-				return
-			}
-
-			fmt.Printf("You choose %q\n", result)
+			logger.Printf("you choose %q\n", result)
 			contName = strings.Split(result, " ")[0]
 			logger.Printf("contName: %s", contName)
 		case 2:
