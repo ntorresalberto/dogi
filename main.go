@@ -301,7 +301,8 @@ func main() {
 			out, err := exec.Command("docker", "ps").Output()
 			check(err)
 
-			options := strings.Split(string(out), "\n")
+			options := strings.Split(
+				strings.TrimSpace(string(out[:])), "\n")
 
 			prompt := promptui.Select{
 				Label: "Select Container",
