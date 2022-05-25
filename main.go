@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+	"github.com/manifoldco/promptui"
 	flag "github.com/spf13/pflag"
 	"io/ioutil"
 	"log"
@@ -228,8 +229,15 @@ func main() {
 	dockerRunArgs := []string{
 		"--interactive",
 		"--tty",
-		fmt.Sprintf("--workdir=%s", *workDirPtr),
 	}
+
+	userObj, err := user.Current()
+	check(err)
+	logger.Println("username:", userObj.Username)
+	logger.Println("    name:", userObj.Name)
+	logger.Println("user uid:", userObj.Uid)
+	logger.Println("user gid:", userObj.Gid)
+	logger.Println("    home:", userObj.HomeDir)
 
 	// argument to be executed
 	// (right after docker run or docker exec)
@@ -287,9 +295,60 @@ func main() {
 	// ********************************************************
 	// ********************************************************
 	case "exec":
-		logger.Printf("Error: sorry, command '%s' not implemented yet!",
-			command)
-		return
+		contName := ""
+		switch flag.NArg() {
+		case 1:
+			out, err := exec.Command("docker", "ps").Output()
+			check(err)
+
+			options := strings.Split(string(out), "\n")
+
+			prompt := promptui.Select{
+				Label: "Select Container",
+				Items: options[1:],
+			}
+
+			_, result, err := prompt.Run()
+
+			if err != nil {
+				fmt.Printf("Prompt failed %v\n", err)
+				return
+			}
+
+			fmt.Printf("You choose %q\n", result)
+			contName = strings.Split(result, " ")[0]
+			logger.Printf("contName: %s", contName)
+		case 2:
+			contName = flag.Arg(1)
+			logger.Printf("contName: %s", contName)
+		default:
+			flag.Usage()
+			fmt.Printf("Error: exec command requires exactly 0 or 1 args (see example below)\n")
+			fmt.Printf("       but %d were args provided: %s\n",
+				flag.NArg()-1, strings.Join(flag.Args()[1:], " "))
+			fmt.Println("       Please use the exec command like:")
+			fmt.Printf("        1 - %s exec <container-name>\n", appname)
+			fmt.Printf("        2 - %s exec <image-name>\n", appname)
+			fmt.Printf("        3 - %s exec\n", appname)
+			fmt.Println("    (without arguments will ask you to choose between open containers)")
+			syscall.Exit(1)
+		}
+
+		if !*noUserPtr {
+			dockerRunArgs = append(dockerRunArgs,
+				fmt.Sprintf("--user=%s", userObj.Username))
+		}
+
+		// TODO: add workdir through the flag argument, dealing with non-existant?
+		entrypoint = []string{contName, "bash"}
+		logger.Println("entrypoint: ", entrypoint)
+		dockerArgs := merge([]string{dockerCmd, command},
+			dockerRunArgs,
+			entrypoint)
+		logger.Println("docker command: ", strings.Join(merge(dockerArgs), " "))
+
+		// syscall exec is used to replace the current process
+		syscall.Exec(dockerBinPath, dockerArgs, os.Environ())
 
 	// ********************************************************
 	// ********************************************************
@@ -329,13 +388,6 @@ func main() {
 		createXauthCmd := exec.Command(bashCmdPath, "-c", xauthCmd)
 		check(createXauthCmd.Run())
 
-		userObj, err := user.Current()
-		check(err)
-		logger.Println("username:", userObj.Username)
-		logger.Println("    name:", userObj.Name)
-		logger.Println("user uid:", userObj.Uid)
-		logger.Println("user gid:", userObj.Gid)
-		logger.Println("    home:", userObj.HomeDir)
 		createGroupsCmd := createGroupCommand(userObj.Gid, userObj.Username)
 		// TODO: apparently you can use --group-add video from docker run?
 		// http://wiki.ros.org/docker/Tutorials/Hardware%20Acceleration#ATI.2FAMD
@@ -366,6 +418,7 @@ func main() {
 		}
 
 		dockerRunArgs = append(dockerRunArgs, []string{
+			fmt.Sprintf("--workdir=%s", *workDirPtr),
 			"--rm",
 			"--network=host",
 			"--volume=/tmp/.X11-unix:/tmp/.X11-unix",
