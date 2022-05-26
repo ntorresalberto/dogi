@@ -300,7 +300,7 @@ func main() {
 	case "exec":
 		contName := ""
 		switch flag.NArg() {
-		case 1:
+		case 0, 1:
 			out, err := exec.Command("docker", "ps").Output()
 			check(err)
 
