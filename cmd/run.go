@@ -56,8 +56,8 @@ func setAptCacher() string {
 	contName := fmt.Sprintf("%s_%s_cont", appname, baseName)
 
 	// find out apt-cacher ip
-	out, err := exec.Command("docker",
-		"inspect", "-f", "{{ .NetworkSettings.IPAddress }}'", contName).Output()
+	out, err := exec.Command("docker", "container",
+		"inspect", "-f", "{{ .NetworkSettings.IPAddress }}", contName).Output()
 	if err != nil {
 		logger.Printf("container %s not found, launching...", contName)
 		out, err = exec.Command("docker",
@@ -70,11 +70,11 @@ func setAptCacher() string {
 		logger.Printf(string(out))
 		check(err)
 
-		out, err = exec.Command("docker",
-			"inspect", "-f", "{{ .NetworkSettings.IPAddress }}'", contName).Output()
+		out, err = exec.Command("docker", "container",
+			"inspect", "-f", "{{ .NetworkSettings.IPAddress }}", contName).Output()
 		check(err)
 	}
-	ip := strings.Trim(strings.TrimSpace(string(out[:])), "'")
+	ip := strings.TrimSpace(string(out[:]))
 	if ip == "" {
 		panic(fmt.Errorf("%s found but not running?", contName))
 	}
@@ -227,7 +227,7 @@ to quickly create a Cobra application.`,
 				// -- not provided means
 				// no command was provided, use image CMD
 				out, err := exec.Command("docker",
-					"inspect", "-f", "'{{join .Config.Cmd \",\"}}'", imageName).Output()
+					"inspect", "-f", "{{join .Config.Cmd \",\"}}", imageName).Output()
 				if err != nil {
 					logger.Fatalf("docker inspect %s failed, image doesn't exist?", imageName)
 				}
