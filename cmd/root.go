@@ -17,10 +17,10 @@ const (
 )
 
 var (
-	noUserPtr     = false
-	noCacherPtr   = false
-	homePtr       = false
-	workDirPtr    = ""
+	noUserPtr     bool
+	noCacherPtr   bool
+	homePtr       bool
+	workDirPtr    string
 	logger        = log.New(os.Stdout, appname+": ", log.Lshortfile)
 	validCommands = [...]string{"run", "exec", "debug", "prune"}
 	dockerRunArgs = []string{
@@ -78,7 +78,8 @@ func Execute() {
 }
 
 func init() {
-	workDirPtr, err := os.Getwd()
+	var err error
+	workDirPtr, err = os.Getwd()
 	check(err)
 	logger.Printf("current dir: %s\n", workDirPtr)
 

@@ -111,12 +111,13 @@ to quickly create a Cobra application.`,
 
 			logger.Println("len(args):", len(args))
 			logger.Println("args:", args)
+			logger.Println("cmd.Flags().Args:", cmd.Flags().Args)
 			// argument to be executed
 			// (right after docker run or docker exec)
 			entrypoint := []string{}
 
 			imageName := ""
-			if len(args) < 2 {
+			if len(args) == 0 {
 				out, err := exec.Command("docker", "images").Output()
 				check(err)
 
@@ -132,7 +133,7 @@ to quickly create a Cobra application.`,
 				check(err)
 				imageName = strings.Split(result, " ")[0]
 			} else {
-				imageName = args[1]
+				imageName = args[0]
 			}
 
 			logger.Printf("imageName: %s\n", imageName)
@@ -190,12 +191,12 @@ to quickly create a Cobra application.`,
 				}
 			}
 
+			logger.Printf("workdir: %s\n", workDirPtr)
 			mountStrs := []string{fmt.Sprintf("--volume=%s:%s", workDirPtr, workDirPtr)}
 			if homePtr {
 				logger.Println("mounting home directory")
 				mountStrs = append(mountStrs, fmt.Sprintf("--volume=%s:%s", userObj.HomeDir, userObj.HomeDir))
 			}
-
 			dockerRunArgs = append(dockerRunArgs, []string{
 				fmt.Sprintf("--workdir=%s", workDirPtr),
 				"--rm",
@@ -218,8 +219,11 @@ to quickly create a Cobra application.`,
 			}
 
 			// figure out the command to execute (image default or provided)
-			execCommand := args
-			if len(args) == 0 {
+			logger.Println("cmd.ArgsLenAtDash():", cmd.ArgsLenAtDash())
+
+			execCommand := []string{"bash"}
+			if cmd.ArgsLenAtDash() == -1 {
+				// -- not provided means
 				// no command was provided, use image CMD
 				out, err := exec.Command("docker",
 					"inspect", "-f", "'{{join .Config.Cmd \",\"}}'", imageName).Output()
@@ -235,9 +239,11 @@ to quickly create a Cobra application.`,
 						imageName)
 					execCommand = []string{"bash"}
 				}
+			} else {
+				execCommand = args[cmd.ArgsLenAtDash():]
 			}
-			execCommandStr := strings.Join(execCommand, " ")
-			logger.Println("execCommandStr:", execCommandStr)
+			execCommandStr := strings.Join(execCommand, ", ")
+			logger.Println("execCommand list:", execCommandStr)
 			entrypoint = execCommand
 
 			// create user script
