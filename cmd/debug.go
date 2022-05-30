@@ -1,0 +1,47 @@
+package cmd
+
+import (
+	"context"
+	"fmt"
+	"syscall"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
+	"github.com/spf13/cobra"
+)
+
+// debugCmd represents the debug command
+var debugCmd = &cobra.Command{
+	Use:   "debug",
+	Short: "a command to debug dogi",
+	Long:  `This command provides an interface to test and see internal dogi information.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("debug called")
+
+		ctx := context.Background()
+		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+		check(err)
+
+		// images
+		imgs, err := cli.ImageList(ctx, types.ImageListOptions{})
+		check(err)
+		logger.Printf("docker images:")
+		for _, img := range imgs {
+			logger.Printf("%s: %d", img.RepoTags, img.Containers)
+		}
+
+		// containers
+		containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
+		check(err)
+		logger.Printf("docker containers:")
+		for _, container := range containers {
+			logger.Printf("%s %s\n", container.ID[:10], container.Image)
+		}
+
+		syscall.Exit(0)
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(debugCmd)
+}

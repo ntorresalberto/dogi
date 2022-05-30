@@ -6,6 +6,7 @@ require (
 	github.com/docker/docker v20.10.16+incompatible
 	github.com/gdamore/tcell/v2 v2.5.1
 	github.com/manifoldco/promptui v0.9.0
+	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
 	github.com/tockins/interact v0.0.0-20171114182912-f8fb5795b5d7
 )
@@ -18,6 +19,7 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/gdamore/encoding v1.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect

@@ -4,10 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
-	"github.com/manifoldco/promptui"
-	flag "github.com/spf13/pflag"
 	"io/ioutil"
 	"log"
 	"os"
@@ -17,6 +13,13 @@ import (
 	"strings"
 	"syscall"
 	"text/template"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
+	"github.com/manifoldco/promptui"
+	"github.com/ntorresalberto/dogi/assets"
+	"github.com/ntorresalberto/dogi/cmd"
+	flag "github.com/spf13/pflag"
 )
 
 // TODO: add note on why flags need to be placed after dogi
@@ -80,10 +83,6 @@ xeyes is not installed in the ubuntu image by default.
 var (
 	logger        = log.New(os.Stdout, appname+": ", log.Lshortfile)
 	validCommands = [...]string{"run", "exec", "debug", "prune"}
-	//go:embed createUser.sh.in
-	createUserTemplate string
-	//go:embed apt-cacher-ng/Dockerfile
-	aptCacheDockerfile string
 )
 
 func imgLocal(name string) bool {
@@ -110,7 +109,7 @@ func setAptCacher() string {
 		defer os.RemoveAll(dir) // clean up
 
 		tmpfn := filepath.Join(dir, "Dockerfile")
-		check(ioutil.WriteFile(tmpfn, []byte(aptCacheDockerfile), 0666))
+		check(ioutil.WriteFile(tmpfn, []byte(assets.AptCacheDockerfile), 0666))
 		logger.Printf("temp dir: %s\n", dir)
 		logger.Printf("temp Dockerfile: %s\n", tmpfn)
 
@@ -177,6 +176,9 @@ func merge(ss ...[]string) (s []string) {
 	return
 }
 func main() {
+
+	cmd.Execute()
+
 	cwd, err := os.Getwd()
 	check(err)
 	noUserPtr := flag.Bool("no-user", false, "don't create user inside container (run as root inside)")
@@ -214,6 +216,12 @@ func main() {
 		}
 	}
 	if command == "" || !validCommand {
+		if command == "" {
+			fmt.Println("Empty command provided.")
+		}
+		if !validCommand {
+			fmt.Printf("'%s' is not a valid command.\n", command)
+		}
 		prompt := promptui.Select{
 			Label: "Please provide a valid command",
 			Items: validCommands[:],
@@ -353,12 +361,28 @@ func main() {
 	// ********************************************************
 	// ********************************************************
 	case "run":
+
+		imageName := ""
 		if flag.NArg() < 2 {
-			flag.Usage()
-			logger.Println("Error: docker image name not provided!")
-			syscall.Exit(1)
+			out, err := exec.Command("docker", "images").Output()
+			check(err)
+
+			options := strings.Split(
+				strings.TrimSpace(string(out[:])), "\n")
+
+			prompt := promptui.Select{
+				Label: "Select Image",
+				Items: options[1:],
+			}
+
+			_, result, err := prompt.Run()
+			check(err)
+			imageName = strings.Split(result, " ")[0]
+		} else {
+			imageName = flag.Arg(1)
 		}
-		imageName := flag.Arg(1)
+
+		logger.Printf("imageName: %s\n", imageName)
 
 		// find bash path
 		bashCmdPath, err := exec.LookPath("bash")
@@ -439,8 +463,9 @@ func main() {
 		}
 
 		// figure out the command to execute (image default or provided)
-		// logger.Println("flag.Args():", flag.Args())
-		// logger.Println("flag.Args()[2:]:", flag.Args()[2:])
+		logger.Println("flag.NArg():", flag.NArg())
+		logger.Println("flag.Args():", flag.Args())
+		logger.Println("flag.Args()[2:]:", flag.Args()[2:])
 		execCommand := flag.Args()[2:]
 		if len(execCommand) == 0 {
 			// no command was provided, use image CMD
@@ -472,7 +497,7 @@ func main() {
 			check(err)
 			logger.Println("create user script:", createUserFile.Name())
 			{
-				err := template.Must(template.New("").Option("missingkey=error").Parse(createUserTemplate)).Execute(createUserFile,
+				err := template.Must(template.New("").Option("missingkey=error").Parse(assets.CreateUserTemplate)).Execute(createUserFile,
 					map[string]string{"username": userObj.Username,
 						"homedir": userObj.HomeDir,
 						"uid":     userObj.Uid,

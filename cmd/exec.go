@@ -1,0 +1,96 @@
+package cmd
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"os/user"
+	"strings"
+	"syscall"
+
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/cobra"
+)
+
+var (
+	// execCmd represents the exec command
+	execCmd = &cobra.Command{
+		Use:   "exec [flags] [container-name]",
+		Short: "a docker exec wrapper",
+		Long: `A docker exec wrapper.
+It allows opening a new tty instance (like an interactive terminal) into an
+existing container.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("exec called")
+			fmt.Println(args)
+			fmt.Println(len(args))
+
+			nargs := len(args)
+			contName := ""
+			if nargs == 0 {
+				out, err := exec.Command("docker", "ps").Output()
+				check(err)
+
+				options := strings.Split(
+					strings.TrimSpace(string(out[:])), "\n")
+
+				if len(options) == 0 {
+					fmt.Printf("Error: no containers running?\n")
+					syscall.Exit(1)
+				}
+
+				prompt := promptui.Select{
+					Label: "Select Container",
+					Items: options[1:],
+				}
+
+				_, result, err := prompt.Run()
+				check(err)
+
+				logger.Printf("you choose %q\n", result)
+				contName = strings.Split(result, " ")[0]
+				logger.Printf("contName: %s", contName)
+
+			} else if nargs == 1 {
+				contName = args[0]
+			} else {
+				fmt.Printf("Error: exec command requires exactly 0 or 1 args (see example below)\n")
+				fmt.Printf("       but %d were args provided: %s\n",
+					nargs, strings.Join(args, " "))
+				fmt.Println("       Please use the exec command like:")
+				fmt.Printf("          - %s exec <container-name>\n", appname)
+				fmt.Printf("          - %s exec\n", appname)
+				fmt.Println("    (without arguments will ask you to choose between open containers)")
+				syscall.Exit(1)
+			}
+
+			fmt.Printf("contName: %s\n", contName)
+
+			if !noUserPtr {
+				userObj, err := user.Current()
+				check(err)
+
+				logger.Println("username:", userObj.Username)
+				dockerRunArgs = append(dockerRunArgs,
+					fmt.Sprintf("--user=%s", userObj.Username))
+			}
+			logger.Printf("docker args: %s\n", dockerRunArgs)
+
+			// TODO: add workdir through the flag argument, dealing with non-existant?
+			entrypoint := []string{contName, "bash"}
+			logger.Printf("entrypoint: %s\n", entrypoint)
+			dockerArgs := merge([]string{dockerCmd, cmd.CalledAs()},
+				dockerRunArgs,
+				entrypoint)
+			logger.Println("docker command: ", strings.Join(merge(dockerArgs), " "))
+
+			// syscall exec is used to replace the current process
+			syscall.Exec(dockerBinPath(), dockerArgs, os.Environ())
+		},
+	}
+)
+
+func init() {
+	rootCmd.AddCommand(execCmd)
+	execCmd.Flags().BoolVar(&noUserPtr, "no-user", false, "don't use user inside container (run as root inside)")
+}
