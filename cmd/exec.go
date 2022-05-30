@@ -80,7 +80,7 @@ existing container.`,
 					"inspect", "-f", "{{ .Config.WorkingDir }}", contName).Output()
 				check(err)
 				wd := strings.TrimSpace(string(out[:]))
-				if wd != ""{
+				if wd != "" {
 					workDirPtr = wd
 				} else {
 					// TODO: what should be default exec working dir? maybe ask?

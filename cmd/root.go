@@ -75,7 +75,7 @@ func Execute() {
 }
 
 func workDirProvided() bool {
-	if workDirPtr==""{
+	if workDirPtr == "" {
 		// means flag was not provided
 		var err error
 		workDirPtr, err = os.Getwd()
