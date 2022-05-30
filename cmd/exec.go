@@ -74,9 +74,24 @@ existing container.`,
 				dockerRunArgs = append(dockerRunArgs,
 					fmt.Sprintf("--user=%s", userObj.Username))
 			}
+			if !workDirProvided() {
+				// try to use the same workdir as when container was launched
+				out, err := exec.Command("docker", "container",
+					"inspect", "-f", "{{ .Config.WorkingDir }}", contName).Output()
+				check(err)
+				wd := strings.TrimSpace(string(out[:]))
+				if wd != ""{
+					workDirPtr = wd
+				} else {
+					// TODO: what should be default exec working dir? maybe ask?
+					workDirPtr = "/"
+				}
+			}
+			logger.Printf("workdir: %s\n", workDirPtr)
+			dockerRunArgs = append(dockerRunArgs, fmt.Sprintf("--workdir=%s", workDirPtr))
+
 			logger.Printf("docker args: %s\n", dockerRunArgs)
 
-			// TODO: add workdir through the flag argument, dealing with non-existant?
 			entrypoint := []string{contName, "bash"}
 			logger.Printf("entrypoint: %s\n", entrypoint)
 			dockerArgs := merge([]string{dockerCmd, cmd.CalledAs()},
@@ -93,4 +108,5 @@ existing container.`,
 func init() {
 	rootCmd.AddCommand(execCmd)
 	execCmd.Flags().BoolVar(&noUserPtr, "no-user", false, "don't use user inside container (run as root inside)")
+	execCmd.Flags().StringVar(&workDirPtr, "workdir", "", "working directory inside the container")
 }

@@ -7,7 +7,6 @@ import (
 	"os/exec"
 
 	"github.com/spf13/cobra"
-	// "fmt"
 )
 
 const (
@@ -68,8 +67,6 @@ func check(e error) {
 	}
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
@@ -77,11 +74,18 @@ func Execute() {
 	}
 }
 
-func init() {
-	var err error
-	workDirPtr, err = os.Getwd()
-	check(err)
-	logger.Printf("current dir: %s\n", workDirPtr)
+func workDirProvided() bool {
+	if workDirPtr==""{
+		// means flag was not provided
+		var err error
+		workDirPtr, err = os.Getwd()
+		check(err)
+		logger.Printf("current dir: %s\n", workDirPtr)
+		return false
+	}
+	return true
+}
 
+func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

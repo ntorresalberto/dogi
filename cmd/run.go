@@ -191,6 +191,7 @@ to quickly create a Cobra application.`,
 				}
 			}
 
+			workDirProvided() // initializes working directory
 			logger.Printf("workdir: %s\n", workDirPtr)
 			mountStrs := []string{fmt.Sprintf("--volume=%s:%s", workDirPtr, workDirPtr)}
 			if homePtr {
@@ -293,7 +294,7 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(runCmd)
 	runCmd.Flags().BoolVar(&noUserPtr, "no-user", false, "don't use user inside container (run as root inside)")
-	runCmd.Flags().StringVar(&workDirPtr, "workdir", workDirPtr, "working directory when launching the container, will be mounted inside")
+	runCmd.Flags().StringVar(&workDirPtr, "workdir", "", "working directory when launching the container, will be mounted inside")
 	runCmd.Flags().BoolVar(&noCacherPtr, "no-cacher", false, "don't launch apt-cacher container")
 	runCmd.Flags().BoolVar(&homePtr, "home", false, "mount your complete home directory")
 }
