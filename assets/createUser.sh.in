@@ -27,6 +27,20 @@ mkdir -pv "{{.homedir}}"
 mkhomedir_helper {{.username}}
 chown {{.uid}}:{{.ugid}} "{{.homedir}}"
 
+echo "- setup matrix command!"
+create_bash_script() {
+    file=/usr/local/bin/$1
+    script=$2
+    echo '#!/usr/bin/env bash' > $file
+    echo "$script" >> $file
+    chmod +x $file
+}
+
+create_bash_script dogi \
+                   'echo "dogi has no power here, you are inside a container!"'
+create_bash_script matrix \
+                   'echo "trapped inside the matrix!"'
+
 echo "- done!"
 if [ $# -eq 0 ]
 then
