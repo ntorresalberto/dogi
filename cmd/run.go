@@ -128,8 +128,6 @@ Examples:
 			UnknownFlags: true,
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("run called")
-
 			logger.Println("len(args):", len(args))
 			logger.Println("args:", args)
 			logger.Println("cmd.Flags().Args():", cmd.Flags().Args())
@@ -247,7 +245,9 @@ Examples:
 				out, err := exec.Command("docker",
 					"inspect", "-f", "{{join .Config.Cmd \",\"}}", imageName).Output()
 				if err != nil {
-					logger.Fatalf("docker inspect %s failed, image doesn't exist?", imageName)
+					// TODO: fix this
+					logger.Printf("Error: docker inspect %s failed, image doesn't exist?", imageName)
+					logger.Fatalf("as a workaround, you can try executing this first: \ndocker pull %s", imageName)
 				}
 
 				execCommand = strings.Split(strings.Trim(strings.TrimSpace(string(out[:])),

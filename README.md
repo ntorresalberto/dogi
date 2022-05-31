@@ -1,4 +1,7 @@
-![dogi](https://user-images.githubusercontent.com/63748204/165713084-59b79373-7c7f-4309-86ce-6991230f8fbb.png)
+<p align="center">
+<img src=https://user-images.githubusercontent.com/63748204/165713084-59b79373-7c7f-4309-86ce-6991230f8fbb.png width=500/>
+</p>
+
 # dogi
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ntorresalberto/dogi.svg)](https://pkg.go.dev/github.com/ntorresalberto/dogi)
@@ -11,13 +14,13 @@ Even though **dogi** was originally inspired by [rocker](https://github.com/osrf
 
 ## Quickstart
 
-```
-git clone https://github.com/ntorresalberto/dogi.git
-cd dogi
-go mod tidy
-go install .
+```bash
+go install github.com/ntorresalberto/dogi@latest
 dogi run ubuntu
 ```
+
+**NOTE:** some [optional setup steps](#optional-setup-steps) might be required.
+
 ---
 
 - [Examples](#examples)
@@ -27,6 +30,7 @@ dogi run ubuntu
   - [Limitations](#limitations)
 - [For Developers](#for-developers)
   - [Compiling from source](#compiling-from-source)
+- [Optional Setup Steps](#optional-setup-steps)
 
 ---
 
@@ -34,15 +38,17 @@ dogi run ubuntu
 
 - Launch a container capable of GUI applications
 
-```
+```bash
     dogi run ubuntu
+    dogi run --no-user ubuntu # as root
+    dogi run --home ubuntu # share your home directory inside container
 ```
 
 - Open a new terminal inside an existing container
 
-```
+```bash
     dogi exec
-
+    dogi exec --no-user # as root
     dogi exec <container-name>
 ```
 
@@ -50,20 +56,22 @@ dogi run ubuntu
 - Launch a GUI command inside a container
 (`xeyes` is not installed in the `ubuntu` image by default)
 
-```
+```bash
     dogi run ubuntu -- bash -c "sudo apt install -y x11-apps && xeyes"
+    dogi run ubuntu --no-user -- bash -c "apt install -y x11-apps && xeyes" # as root
 ```
 
-- Launch an 3d accelerated GUI (opengl)
+- Launch an 3D accelerated GUI (opengl)
 
-```
+```bash
     dogi run ubuntu -- bash -c "sudo apt install -y mesa-utils && glxgears"
+    dogi run ubuntu --no-user -- bash -c "apt install -y mesa-utils && glxgears" # as root
 ```
 
 
 - Delete unused and/or dangling containers, images and volumes
 
-```
+```bash
     dogi prune
 ```
 
@@ -104,3 +112,23 @@ cd dogi
 go mod tidy
 go run main.go
 ```
+
+### Optional setup steps
+
+**installing go**
+
+You need [golang](https://go.dev/doc/install) installed.
+On ubuntu, an updated version can easily be installed with:
+```bash
+sudo snap install go --classic
+```
+
+**bash: dogi: command not found**
+
+This error message means your `$PATH` doesn't include the go binaries path.
+You can fix it [like this](https://stackoverflow.com/questions/42965673/cant-run-go-bin-in-terminal) or, if you only want to enable **dogi**, use:
+```bash
+echo "alias dogi=$(go env GOPATH)/bin/dogi" >> ~/.bashrc
+source .bashrc
+```
+

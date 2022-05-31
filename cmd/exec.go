@@ -36,7 +36,6 @@ Examples:
 ---------------------------------------------
 `, map[string]string{"execExamples": execExamples}),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("exec called")
 			fmt.Println(args)
 			fmt.Println(len(args))
 

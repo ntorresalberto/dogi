@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"syscall"
 
 	"github.com/docker/docker/api/types"
@@ -15,8 +14,6 @@ var debugCmd = &cobra.Command{
 	Short: "a command to debug dogi",
 	Long:  `This command provides an interface to test and see internal dogi information.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("debug called")
-
 		ctx := context.Background()
 		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 		check(err)

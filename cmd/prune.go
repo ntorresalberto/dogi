@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os/exec"
 	"syscall"
 
@@ -27,8 +26,6 @@ Examples:
 ---------------------------------------------
 `, map[string]string{"pruneExamples": pruneExamples}),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("prune called")
-
 		logger.Println("prune containers...")
 		_, err := exec.Command("docker",
 			"container", "prune", "-f").Output()
