@@ -12,14 +12,29 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const execExamples = `
+  - Open a new terminal inside an existing container
+
+    {{.appname}} exec
+
+    {{.appname}} exec <container-name>
+`
+
 var (
-	// execCmd represents the exec command
 	execCmd = &cobra.Command{
 		Use:   "exec [flags] [container-name]",
 		Short: "a docker exec wrapper",
-		Long: `A docker exec wrapper.
-It allows opening a new tty instance (like an interactive terminal) into an
-existing container.`,
+		Long: helpTemplate(`
+A docker exec wrapper.
+It allows opening a new tty instance (like an interactive terminal) into an existing container.
+
+---------------------------------------------
+
+Examples:
+
+{{.execExamples}}
+---------------------------------------------
+`, map[string]string{"execExamples": execExamples}),
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("exec called")
 			fmt.Println(args)
@@ -100,7 +115,7 @@ existing container.`,
 			logger.Println("docker command: ", strings.Join(merge(dockerArgs), " "))
 
 			// syscall exec is used to replace the current process
-			syscall.Exec(dockerBinPath(), dockerArgs, os.Environ())
+			check(syscall.Exec(dockerBinPath(), dockerArgs, os.Environ()))
 		},
 	}
 )

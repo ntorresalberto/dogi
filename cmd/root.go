@@ -1,10 +1,13 @@
 package cmd
 
 import (
+	"bytes"
 	_ "embed"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"text/template"
 
 	"github.com/spf13/cobra"
 )
@@ -21,21 +24,32 @@ var (
 	homePtr       bool
 	workDirPtr    string
 	logger        = log.New(os.Stdout, appname+": ", log.Lshortfile)
-	validCommands = [...]string{"run", "exec", "debug", "prune"}
 	dockerRunArgs = []string{
 		"--interactive",
 		"--tty",
 	}
-	// rootCmd represents the base command when called without any subcommands
 	rootCmd = &cobra.Command{
 		Use:   "dogi",
 		Short: "docker made easier!",
-		Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+		Long: helpTemplate(`
+{{.appname}} is a minimalist wrapper for docker run and docker exec to easily launch containers while sharing the working directory and use GUI applications.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+{{.githubUrl}}
+
+---------------------------------------------
+
+Examples:
+
+{{.execExamples}}
+----------------
+{{.runExamples}}
+----------------
+{{.pruneExamples}}
+---------------------------------------------
+
+`, map[string]string{"runExamples": runExamples,
+			"execExamples": execExamples, "pruneExamples": pruneExamples}),
+		// TODO: add multiple choice for help or check if inside container?
 		// Uncomment the following line if your bare application
 		// has an action associated with it:
 		// Run: func(cmd *cobra.Command, args []string) {
@@ -44,6 +58,36 @@ to quickly create a Cobra application.`,
 		SuggestionsMinimumDistance: 2,
 	}
 )
+
+func panicKey(key string, mapWithoutKey map[string]string) {
+	if _, ok := mapWithoutKey[key]; ok {
+		panic(fmt.Errorf("%s should not exist in this dictionary\n", key))
+	}
+}
+
+func helpTemplate(templ string, parameters map[string]string) string {
+
+	const appnameKey = "appname"
+	panicKey(appnameKey, parameters)
+	parameters[appnameKey] = appname
+	const githubKey = "githubUrl"
+	panicKey(githubKey, parameters)
+	parameters[githubKey] = githubUrl
+
+	for key, val := range parameters {
+		buf := &bytes.Buffer{}
+		err := template.Must(template.New("").Option("missingkey=error").Parse(val)).Execute(buf,
+			map[string]string{appnameKey: appname})
+		check(err)
+		parameters[key] = buf.String()
+	}
+
+	buf := &bytes.Buffer{}
+	err := template.Must(template.New("").Option("missingkey=error").Parse(templ)).Execute(buf,
+		parameters)
+	check(err)
+	return buf.String()
+}
 
 // find docker path for the exec command
 func dockerBinPath() (dockerBinPath string) {
@@ -84,8 +128,4 @@ func workDirProvided() bool {
 		return false
 	}
 	return true
-}
-
-func init() {
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

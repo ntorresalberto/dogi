@@ -19,10 +19,7 @@ import (
 func imgLocal(name string) bool {
 	_, err := exec.Command("bash", "-c",
 		fmt.Sprintf("docker images | grep %s", name)).Output()
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func setAptCacher() string {
@@ -83,6 +80,7 @@ func setAptCacher() string {
 	aptCacherConf := fmt.Sprintf("Acquire::http { Proxy \"http://%s:3142\"; };", ip)
 
 	aptCacherFile, err := os.CreateTemp("", fmt.Sprintf(".%s_%s_*", appname, baseName))
+	check(err)
 	logger.Printf("apt-cacher file: %s", aptCacherFile.Name())
 	check(ioutil.WriteFile(aptCacherFile.Name(), []byte(aptCacherConf), 0666))
 	return aptCacherFile.Name()
@@ -92,17 +90,40 @@ func createGroupCommand(gid, groupName string) string {
 	return fmt.Sprintf("groupadd --gid %s %s", gid, groupName)
 }
 
+const runExamples = `
+  - Launch a container capable of GUI applications
+
+    {{.appname}} run ubuntu
+
+----------------
+
+  - Launch a GUI command inside a container
+  xeyes is not installed in the ubuntu image by default.
+
+    {{.appname}} run ubuntu -- bash -c "sudo apt install -y x11-apps && xeyes"
+
+----------------
+
+  - Launch an 3D accelerated GUI (opengl)
+
+ {{.appname}} run ubuntu -- bash -c "sudo apt install -y mesa-utils && glxgears"
+`
+
 var (
-	// runCmd represents the run command
 	runCmd = &cobra.Command{
 		Use:   "run",
 		Short: "a docker run wrapper",
-		Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+		Long: helpTemplate(`
+{{.appname}} is a minimalist wrapper for docker run and docker exec to easily launch containers while sharing the
+working directory and use GUI applications.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+---------------------------------------------
+
+Examples:
+
+{{ .runExamples}}
+---------------------------------------------
+`, map[string]string{"runExamples": runExamples}),
 		FParseErrWhitelist: cobra.FParseErrWhitelist{
 			UnknownFlags: true,
 		},
@@ -111,11 +132,8 @@ to quickly create a Cobra application.`,
 
 			logger.Println("len(args):", len(args))
 			logger.Println("args:", args)
-			logger.Println("cmd.Flags().Args:", cmd.Flags().Args)
-			// argument to be executed
-			// (right after docker run or docker exec)
-			entrypoint := []string{}
-
+			logger.Println("cmd.Flags().Args():", cmd.Flags().Args())
+			var entrypoint []string
 			imageName := ""
 			if len(args) == 0 {
 				out, err := exec.Command("docker", "images").Output()
@@ -222,7 +240,7 @@ to quickly create a Cobra application.`,
 			// figure out the command to execute (image default or provided)
 			logger.Println("cmd.ArgsLenAtDash():", cmd.ArgsLenAtDash())
 
-			execCommand := []string{"bash"}
+			var execCommand []string
 			if cmd.ArgsLenAtDash() == -1 {
 				// -- not provided means
 				// no command was provided, use image CMD
@@ -285,7 +303,7 @@ to quickly create a Cobra application.`,
 			logger.Println("docker command: ", strings.Join(merge(dockerArgs), " "))
 
 			// syscall exec is used to replace the current process
-			syscall.Exec(dockerBinPath(), dockerArgs, os.Environ())
+			check(syscall.Exec(dockerBinPath(), dockerArgs, os.Environ()))
 
 		},
 	}
