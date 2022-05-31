@@ -35,20 +35,36 @@ dogi run ubuntu
 - Launch a container capable of GUI applications
 
 ```
-dogi run ubuntu
+    dogi run ubuntu
 ```
+
+- Open a new terminal inside an existing container
+
+```
+    dogi exec
+
+    dogi exec <container-name>
+```
+
 
 - Launch a GUI command inside a container
-xeyes is not installed in the ubuntu image by default.
+(`xeyes` is not installed in the `ubuntu` image by default)
 
 ```
-dogi run ubuntu bash -c "sudo apt install -y x11-apps && xeyes"
+    dogi run ubuntu -- bash -c "sudo apt install -y x11-apps && xeyes"
 ```
 
 - Launch an 3d accelerated GUI (opengl)
 
 ```
-dogi run ubuntu bash -c "sudo apt install -y mesa-utils && glxgears"
+    dogi run ubuntu -- bash -c "sudo apt install -y mesa-utils && glxgears"
+```
+
+
+- Delete unused and/or dangling containers, images and volumes
+
+```
+    dogi prune
 ```
 
 ## Overview
