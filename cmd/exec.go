@@ -62,7 +62,7 @@ Examples:
 				check(err)
 
 				logger.Printf("you choose %q\n", result)
-				contName = strings.Split(result, " ")[0]
+				contName = strings.Fields(result)[0]
 				logger.Printf("contName: %s", contName)
 
 			} else if nargs == 1 {

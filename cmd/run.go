@@ -166,11 +166,10 @@ const runExamples = `
 
 var (
 	runCmd = &cobra.Command{
-		Use:   "run",
+		Use:   "run [docker-image]",
 		Short: "a docker run wrapper",
 		Long: helpTemplate(`
-{{.appname}} is a minimalist wrapper for docker run and docker exec to easily launch containers while sharing the
-working directory and use GUI applications.
+{{.appname}} is a minimalist wrapper for docker run and docker exec to easily launch containers while sharing the working directory and use GUI applications.
 
 ---------------------------------------------
 
@@ -181,6 +180,19 @@ Examples:
 `, map[string]string{"runExamples": runExamples}),
 		FParseErrWhitelist: cobra.FParseErrWhitelist{
 			UnknownFlags: true,
+		},
+		PreRun: func(cmd *cobra.Command, args []string) {
+			maxArgs := 1
+			if len(args) > maxArgs {
+				cmd.Help()
+				fmt.Printf("\nError: %s %s was called with more than %d arguments (%s)\n",
+					appname, cmd.CalledAs(),
+					maxArgs, strings.Join(args, " "))
+				fmt.Printf("       but it can only be called with 0 or 1 argument (the docker image)\n")
+				fmt.Println("       if you wanted to execute a specific command inside a container,")
+				fmt.Println("       you need to use '--' like in the examples above")
+				syscall.Exit(1)
+			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			logger.Println("len(args):", len(args))
@@ -202,7 +214,8 @@ Examples:
 
 				_, result, err := prompt.Run()
 				check(err)
-				imageName = strings.Split(result, " ")[0]
+
+				imageName = strings.Fields(result)[2]
 			} else {
 				imageName = args[0]
 			}
@@ -310,8 +323,7 @@ Examples:
 					logger.Fatalf("as a workaround, you can try executing this first: \ndocker pull %s", imageName)
 				}
 
-				execCommand = strings.Split(strings.Trim(strings.TrimSpace(string(out[:])),
-					"'"), ",")
+				execCommand = strings.Split(strings.TrimSpace(string(out[:])), ",")
 				logger.Println("imageCmd: [", strings.Join(execCommand, ", "), "]")
 				if len(execCommand) == 0 {
 					logger.Printf("%s has no CMD command? please report this as an issue!\n",
