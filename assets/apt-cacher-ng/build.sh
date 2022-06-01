@@ -15,5 +15,5 @@ trace_off
 
 echo "- build image"
 trace_on
-docker build -t eg_apt_cacher_ng .
+docker build -t dogi/apt-cacher .
 trace_off

@@ -22,16 +22,30 @@ func imgLocal(name string) bool {
 	return err == nil
 }
 
+type contState struct {
+	exists, running bool
+}
+
+func contRunning(name string) contState {
+	constate := contState{exists: true}
+	out, err := exec.Command("docker", "container",
+		"inspect", "-f", "{{ .State.Running }}", name).Output()
+	if err != nil {
+		constate.exists = false
+	} else {
+		constate.running = strings.TrimSpace(string(out[:])) == "true"
+	}
+	return constate
+}
+
 func setAptCacher() string {
 
 	baseName := "apt-cacher"
 	imgName := fmt.Sprintf("%s/%s", appname, baseName)
 
-	if imgLocal(imgName) {
-		logger.Printf("image %s found",
-			imgName)
-	} else {
-		logger.Printf("%s NOT found, building...", imgName)
+	{
+		logger.Printf("build apt cacher image: %s\n", imgName)
+		// build apt-cache-ng image
 		dir, err := ioutil.TempDir("", "dogi_apt-cache")
 		check(err)
 		defer os.RemoveAll(dir) // clean up
@@ -52,6 +66,41 @@ func setAptCacher() string {
 	// launch apt-cacher container
 	contName := fmt.Sprintf("%s_%s_cont", appname, baseName)
 
+	contNeedsRestart := false
+	constate := contRunning(contName)
+	if constate.exists {
+		// check container image is up to date
+		out, err := exec.Command("docker", "image",
+			"inspect", "-f", "{{ .Id }}", imgName).Output()
+		check(err)
+		imageId := strings.TrimSpace(string(out[:]))
+
+		out, err = exec.Command("docker", "container",
+			"inspect", "-f", "{{ .Image }}", contName).Output()
+		contImageId := strings.TrimSpace(string(out[:]))
+
+		if imageId != contImageId {
+			logger.Printf("need to restart apt cache container")
+			contNeedsRestart = true
+		}
+	}
+
+	if contNeedsRestart {
+		if constate.running {
+			logger.Printf("container running, stopping...")
+			_, err := exec.Command("docker", "container",
+				"stop", contName).Output()
+			check(err)
+		}
+
+		if constate.exists {
+			logger.Printf("container exists, removing...")
+			_, err := exec.Command("docker", "container",
+				"rm", contName).Output()
+			check(err)
+		}
+	}
+
 	// find out apt-cacher ip
 	out, err := exec.Command("docker", "container",
 		"inspect", "-f", "{{ .NetworkSettings.IPAddress }}", contName).Output()
@@ -64,7 +113,7 @@ func setAptCacher() string {
 			fmt.Sprintf("--name=%s", contName),
 			imgName,
 		).Output()
-		logger.Printf(string(out))
+		logger.Printf("apt-cacher container started")
 		check(err)
 
 		out, err = exec.Command("docker", "container",
