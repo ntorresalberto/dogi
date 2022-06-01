@@ -16,6 +16,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func timeZone() string {
+	out, err := exec.Command("cat", "/etc/timezone").Output()
+	check(err)
+	return strings.TrimSpace(string(out[:]))
+}
+
 func imgLocal(name string) bool {
 	_, err := exec.Command("bash", "-c",
 		fmt.Sprintf("docker images | grep %s", name)).Output()
@@ -273,7 +279,12 @@ Examples:
 				"--env=QT_X11_NO_MITSHM=1",
 				"--env=DISPLAY",
 				"--env=TERM",
-				"--volume=/etc/localtime:/etc/localtime:ro",
+				// TODO: actually this should be setup by tzdata package
+				// maybe it's better not to touch inside or set env var TZ?
+				// https://bugs.launchpad.net/ubuntu/+source/tzdata/+bug/1554806
+				fmt.Sprintf("--env=TZ=%s", timeZone()),
+				// "--volume=/etc/localtime:/etc/localtime:ro",
+				// "--volume=/etc/timezone:/etc/timezone:ro",
 				"--device=/dev/dri",
 			}...)
 			dockerRunArgs = append(dockerRunArgs, mountStrs...)

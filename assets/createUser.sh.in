@@ -3,8 +3,8 @@ set -e
 
 echo "- running apt update..."
 DEBIAN_FRONTEND=noninteractive apt-get -qq update > /dev/null
-echo "- installing sudo..."
-DEBIAN_FRONTEND=noninteractive apt-get -qq install sudo vim > /dev/null
+echo "- installing sudo, tzdata, vim..."
+DEBIAN_FRONTEND=noninteractive apt-get -qq install sudo tzdata vim > /dev/null
 
 echo "- creating user..."
 existing_user_by_uid=`getent passwd "1000" | cut -f1 -d: || true`
