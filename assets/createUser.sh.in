@@ -25,6 +25,7 @@ echo "{{.username}} ALL=NOPASSWD: ALL" >> /etc/sudoers.d/dogi
 echo "- create homedir: {{.homedir}}"
 mkdir -pv "{{.homedir}}"
 mkhomedir_helper {{.username}}
+cp -nrv /etc/skel/. "{{.homedir}}"
 chown {{.uid}}:{{.ugid}} "{{.homedir}}"
 
 echo "- setup matrix command!"
