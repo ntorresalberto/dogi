@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"fmt"
 	"os/exec"
+	"strings"
 	"syscall"
 
 	"github.com/spf13/cobra"
@@ -12,6 +14,11 @@ const pruneExamples = `
 
     {{.appname}} prune
 `
+
+func lastLine(out []byte) string {
+	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	return lines[len(lines)-1]
+}
 
 var pruneCmd = &cobra.Command{
 	Use:   "prune",
@@ -27,18 +34,21 @@ Examples:
 `, map[string]string{"pruneExamples": pruneExamples}),
 	Run: func(cmd *cobra.Command, args []string) {
 		logger.Println("prune containers...")
-		_, err := exec.Command("docker",
+		out, err := exec.Command("docker",
 			"container", "prune", "-f").Output()
+		fmt.Println(lastLine(out))
 		check(err)
 
 		logger.Println("prune images...")
-		_, err = exec.Command("docker",
+		out, err = exec.Command("docker",
 			"image", "prune", "-f").Output()
+		fmt.Println(lastLine(out))
 		check(err)
 
 		logger.Println("prune volumes...")
-		_, err = exec.Command("docker",
+		out, err = exec.Command("docker",
 			"volume", "prune", "-f").Output()
+		fmt.Println(lastLine(out))
 		check(err)
 
 		syscall.Exit(0)
