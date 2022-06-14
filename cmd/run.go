@@ -343,6 +343,13 @@ Examples:
 
 			// create user script
 			if !noUserPtr {
+				// mount .ssh as read-only just in case
+				sshDir := fmt.Sprintf("%s/.ssh", userObj.HomeDir)
+				if _, err := os.Stat(sshDir); !os.IsNotExist(err) {
+					dockerRunArgs = append(dockerRunArgs,
+						fmt.Sprintf("--volume=%s:%s:ro", sshDir, sshDir))
+				}
+
 				// TODO: createUser file won't be removed because
 				// process is replaced at Exec, is there a way?
 				createUserFile, err := os.CreateTemp("",
