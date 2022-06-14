@@ -183,11 +183,15 @@ Examples:
 		},
 		PreRun: func(cmd *cobra.Command, args []string) {
 			maxArgs := 1
-			if len(args) > maxArgs {
+			beforeDashArgs := args
+			if cmd.ArgsLenAtDash() != -1 {
+				beforeDashArgs = args[:cmd.ArgsLenAtDash()]
+			}
+			if len(beforeDashArgs) > maxArgs {
 				cmd.Help()
 				fmt.Printf("\nError: %s %s was called with more than %d arguments (%s)\n",
 					appname, cmd.CalledAs(),
-					maxArgs, strings.Join(args, " "))
+					maxArgs, strings.Join(beforeDashArgs, " "))
 				fmt.Printf("       but it can only be called with 0 or 1 argument (the docker image)\n")
 				fmt.Println("       if you wanted to execute a specific command inside a container,")
 				fmt.Println("       you need to use '--' like in the examples above")
