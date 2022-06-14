@@ -106,7 +106,7 @@ You should find **dogi** useful if you:
 
 ### Compiling from source
 
-```
+```bash
 git clone https://github.com/ntorresalberto/dogi.git
 cd dogi
 go mod tidy
@@ -118,8 +118,9 @@ go run main.go
 **installing go**
 
 You need [golang](https://go.dev/doc/install) installed.
-On ubuntu, an updated version can easily be installed with:
+On ubuntu, an updated version can easily be installed with **one of these** 2 ways:
 ```bash
+sudo apt install golang
 sudo snap install go --classic
 ```
 
