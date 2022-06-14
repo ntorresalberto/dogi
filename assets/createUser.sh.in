@@ -46,10 +46,10 @@ echo "- done!"
 if [ $# -eq 0 ]
 then
     echo "- switch to user {{.username}}"
-    sudo -Hu {{.username}} bash
+    sudo -EHu {{.username}} bash
 fi
 echo "- run as user: $@"
-sudo -Hu {{.username}} "$@"
+sudo -EHu {{.username}} "$@"
 
 # TODO: remove these used in tests
 # echo "- run as user: $*"
