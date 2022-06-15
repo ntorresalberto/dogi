@@ -89,6 +89,10 @@ func setAptCacher() string {
 			logger.Printf("need to restart apt cache container")
 			contNeedsRestart = true
 		}
+
+		if !constate.running {
+			contNeedsRestart = true
+		}
 	}
 
 	if contNeedsRestart {
