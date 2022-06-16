@@ -26,6 +26,23 @@ type contState struct {
 	exists, running bool
 }
 
+func imagesStartingWith(toComplete string) []string {
+	out, err := exec.Command("docker", "images").Output()
+	check(err)
+
+	imglines := strings.Split(
+		strings.TrimSpace(string(out[:])), "\n")
+	images := []string{}
+	for _, imgline := range imglines {
+		fields := strings.Fields(imgline)
+		imgtag := fields[0] + ":" + fields[1]
+		if strings.HasPrefix(imgtag, toComplete) {
+			images = append(images, imgtag)
+		}
+	}
+	return images
+}
+
 func selectImage() string {
 
 	out, err := exec.Command("docker", "images").Output()
@@ -209,6 +226,12 @@ Examples:
 `, map[string]string{"runExamples": runExamples}),
 		FParseErrWhitelist: cobra.FParseErrWhitelist{
 			UnknownFlags: true,
+		},
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			if len(args) != 0 {
+				return nil, cobra.ShellCompDirectiveNoFileComp
+			}
+			return imagesStartingWith(toComplete), cobra.ShellCompDirectiveNoFileComp
 		},
 		PreRun: func(cmd *cobra.Command, args []string) {
 			maxArgs := 1
