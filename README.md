@@ -1,5 +1,5 @@
 <p align="center">
-<img src=https://user-images.githubusercontent.com/63748204/165713084-59b79373-7c7f-4309-86ce-6991230f8fbb.png width=500/>
+<img src=https://user-images.githubusercontent.com/63748204/165713084-59b79373-7c7f-4309-86ce-6991230f8fbb.png width=350/>
 </p>
 
 # dogi
