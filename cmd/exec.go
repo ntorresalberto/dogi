@@ -59,7 +59,9 @@ Examples:
 				}
 
 				_, result, err := prompt.Run()
-				check(err)
+				if err != nil {
+					logger.Fatalf("select container failed")
+				}
 
 				logger.Printf("you choose %q\n", result)
 				contName = strings.Fields(result)[0]
