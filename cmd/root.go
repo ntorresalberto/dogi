@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"syscall"
 	"text/template"
 
 	"github.com/spf13/cobra"
@@ -18,6 +19,21 @@ const (
 	dockerCmd = "docker"
 )
 
+func Color(colorString string) func(...interface{}) string {
+	sprint := func(args ...interface{}) string {
+		return fmt.Sprintf(colorString,
+			fmt.Sprint(args...))
+	}
+	return sprint
+}
+
+func insideContainer() bool {
+	if _, err := os.Stat("/.dockerenv"); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
 var (
 	noUserPtr     bool
 	noCacherPtr   bool
@@ -28,6 +44,8 @@ var (
 		"--interactive",
 		"--tty",
 	}
+	Green   = Color("\033[1;32m%s\033[0m")
+	Yellow  = Color("\033[1;33m%s\033[0m")
 	rootCmd = &cobra.Command{
 		Use:   "dogi",
 		Short: "docker made easier!",
@@ -49,12 +67,23 @@ Examples:
 
 `, map[string]string{"runExamples": runExamples,
 			"execExamples": execExamples, "pruneExamples": pruneExamples}),
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			if cmd.CalledAs() != appname && insideContainer() {
+				fmt.Printf("Error: %s cannot run inside a container\n", appname)
+				syscall.Exit(1)
+			}
+		},
 		// TODO: add multiple choice for help or check if inside container?
-		// Uncomment the following line if your bare application
-		// has an action associated with it:
-		// Run: func(cmd *cobra.Command, args []string) {
-		// 	fmt.Println("run rootCmd")
-		// },
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				if insideContainer() {
+					fmt.Println("You are " + Green("INSIDE") + " a container")
+				} else {
+					fmt.Println("You are " + Yellow("OUTSIDE") + " a container (host machine)")
+				}
+				fmt.Printf("to see examples and docs: %s help\n", appname)
+			}
+		},
 		SuggestionsMinimumDistance: 2,
 	}
 )

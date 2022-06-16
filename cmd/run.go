@@ -203,9 +203,9 @@ Examples:
 			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			logger.Println("len(args):", len(args))
-			logger.Println("args:", args)
-			logger.Println("cmd.Flags().Args():", cmd.Flags().Args())
+			// logger.Println("len(args):", len(args))
+			// logger.Println("args:", args)
+			// logger.Println("cmd.Flags().Args():", cmd.Flags().Args())
 			var entrypoint []string
 			imageName := ""
 			if len(args) == 0 {
@@ -221,7 +221,9 @@ Examples:
 				}
 
 				_, result, err := prompt.Run()
-				check(err)
+				if err != nil {
+					logger.Fatalf("select image failed")
+				}
 
 				imageName = strings.Fields(result)[2]
 			} else {
@@ -290,12 +292,18 @@ Examples:
 				logger.Println("mounting home directory")
 				mountStrs = append(mountStrs, fmt.Sprintf("--volume=%s:%s", userObj.HomeDir, userObj.HomeDir))
 			}
+
+			dogiPath, err := os.Executable()
+			check(err)
+			logger.Printf("dogi path:%s", dogiPath)
+
 			dockerRunArgs = append(dockerRunArgs, []string{
 				fmt.Sprintf("--workdir=%s", workDirPtr),
 				"--rm",
 				"--network=host",
 				"--volume=/tmp/.X11-unix:/tmp/.X11-unix",
 				fmt.Sprintf("--volume=%s:/.xauth", xauthfile.Name()),
+				fmt.Sprintf("--volume=%s:/usr/local/bin/%s", dogiPath, appname),
 				"--env=XAUTHORITY=/.xauth",
 				"--env=QT_X11_NO_MITSHM=1",
 				"--env=DISPLAY",

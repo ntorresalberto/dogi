@@ -37,10 +37,8 @@ create_bash_script() {
     chmod +x $file
 }
 
-create_bash_script dogi \
-                   'echo "dogi has no power here, you are inside a container!"'
 create_bash_script matrix \
-                   'echo "trapped inside the matrix!"'
+                   'dogi'
 
 echo "- done!"
 if [ $# -eq 0 ]
