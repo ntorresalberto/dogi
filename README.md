@@ -17,6 +17,9 @@ Even though **dogi** was originally inspired by [rocker](https://github.com/osrf
 ```bash
 go install github.com/ntorresalberto/dogi@latest
 dogi run ubuntu
+
+# optional step to add autocompletion
+echo 'source <(dogi completion bash)' >> ~/.bashrc
 ```
 
 **NOTE:** some [optional setup steps](#optional-setup-steps) might be required.
