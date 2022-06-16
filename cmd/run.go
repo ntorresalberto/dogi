@@ -22,12 +22,6 @@ func timeZone() string {
 	return strings.TrimSpace(string(out[:]))
 }
 
-func imgLocal(name string) bool {
-	_, err := exec.Command("bash", "-c",
-		fmt.Sprintf("docker images | grep %s", name)).Output()
-	return err == nil
-}
-
 type contState struct {
 	exists, running bool
 }
@@ -83,6 +77,7 @@ func setAptCacher() string {
 
 		out, err = exec.Command("docker", "container",
 			"inspect", "-f", "{{ .Image }}", contName).Output()
+		check(err)
 		contImageId := strings.TrimSpace(string(out[:]))
 
 		if imageId != contImageId {
@@ -116,7 +111,7 @@ func setAptCacher() string {
 		"inspect", "-f", "{{ .NetworkSettings.IPAddress }}", contName).Output()
 	if err != nil {
 		logger.Printf("container %s not found, launching...", contName)
-		out, err = exec.Command("docker",
+		_, err = exec.Command("docker",
 			"run", "-d", "--restart=always",
 			fmt.Sprintf("--volume=%s_%s_vol:/var/cache/apt-cacher-ng",
 				appname, baseName),
@@ -192,7 +187,7 @@ Examples:
 				beforeDashArgs = args[:cmd.ArgsLenAtDash()]
 			}
 			if len(beforeDashArgs) > maxArgs {
-				cmd.Help()
+				check(cmd.Help())
 				fmt.Printf("\nError: %s %s was called with more than %d arguments (%s)\n",
 					appname, cmd.CalledAs(),
 					maxArgs, strings.Join(beforeDashArgs, " "))
