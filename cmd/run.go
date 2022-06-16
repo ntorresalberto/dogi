@@ -59,8 +59,10 @@ func setAptCacher() string {
 			"build", "-t", imgName, ".")
 		cmd.Dir = dir
 		out, err := cmd.Output()
-		logger.Printf(string(out))
-		check(err)
+		if err != nil {
+			fmt.Println(string(out))
+			panic(err)
+		}
 	}
 
 	// launch apt-cacher container
