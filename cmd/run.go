@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"text/template"
 
-	"github.com/manifoldco/promptui"
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/ntorresalberto/dogi/assets"
 	"github.com/spf13/cobra"
 )
@@ -24,6 +24,34 @@ func timeZone() string {
 
 type contState struct {
 	exists, running bool
+}
+
+func selectImage() string {
+
+	out, err := exec.Command("docker", "images").Output()
+	check(err)
+
+	options := strings.Split(
+		strings.TrimSpace(string(out[:])), "\n")
+
+	if len(options) == 0 {
+		fmt.Printf("Error: no images locally available?\n")
+		syscall.Exit(1)
+	}
+
+	result := ""
+	prompt := &survey.Select{
+		Message: "Select an image:",
+		Options: options,
+	}
+	if err := survey.AskOne(prompt, &result); err != nil {
+		fmt.Println(err.Error())
+		logger.Fatalf("select image failed")
+	}
+
+	imageId := strings.Fields(result)[2]
+
+	return imageId
 }
 
 func contRunning(name string) contState {
@@ -206,23 +234,9 @@ Examples:
 			var entrypoint []string
 			imageName := ""
 			if len(args) == 0 {
-				out, err := exec.Command("docker", "images").Output()
-				check(err)
+				imageName = selectImage()
+				logger.Printf("imageId: %s", imageName)
 
-				options := strings.Split(
-					strings.TrimSpace(string(out[:])), "\n")
-
-				prompt := promptui.Select{
-					Label: "Select Image",
-					Items: options[1:],
-				}
-
-				_, result, err := prompt.Run()
-				if err != nil {
-					logger.Fatalf("select image failed")
-				}
-
-				imageName = strings.Fields(result)[2]
 			} else {
 				imageName = args[0]
 			}

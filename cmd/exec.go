@@ -8,7 +8,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/manifoldco/promptui"
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +19,32 @@ const execExamples = `
 
     {{.appname}} exec <container-name>
 `
+
+func selectContainer() string {
+	out, err := exec.Command("docker", "ps").Output()
+	check(err)
+
+	options := strings.Split(
+		strings.TrimSpace(string(out[:])), "\n")
+	if len(options) == 0 {
+		fmt.Printf("Error: no containers running?\n")
+		syscall.Exit(1)
+	}
+
+	result := ""
+	prompt := &survey.Select{
+		Message: "Select a container:",
+		Options: options,
+	}
+	if err := survey.AskOne(prompt, &result); err != nil {
+		fmt.Println(err.Error())
+		logger.Fatalf("select container failed")
+	}
+
+	contId := strings.Fields(result)[0]
+
+	return contId
+}
 
 var (
 	execCmd = &cobra.Command{
@@ -42,31 +68,8 @@ Examples:
 			nargs := len(args)
 			contName := ""
 			if nargs == 0 {
-				out, err := exec.Command("docker", "ps").Output()
-				check(err)
-
-				options := strings.Split(
-					strings.TrimSpace(string(out[:])), "\n")
-
-				if len(options) == 0 {
-					fmt.Printf("Error: no containers running?\n")
-					syscall.Exit(1)
-				}
-
-				prompt := promptui.Select{
-					Label: "Select Container",
-					Items: options[1:],
-				}
-
-				_, result, err := prompt.Run()
-				if err != nil {
-					logger.Fatalf("select container failed")
-				}
-
-				logger.Printf("you choose %q\n", result)
-				contName = strings.Fields(result)[0]
-				logger.Printf("contName: %s", contName)
-
+				contName = selectContainer()
+				logger.Printf("contId: %s", contName)
 			} else if nargs == 1 {
 				contName = args[0]
 			} else {
