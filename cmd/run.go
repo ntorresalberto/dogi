@@ -17,9 +17,10 @@ import (
 )
 
 func timeZone() string {
-	out, err := exec.Command("cat", "/etc/timezone").Output()
+	out, err := exec.Command("timedatectl", "show").Output()
 	check(err)
-	return strings.TrimSpace(string(out[:]))
+	return strings.Split(strings.Split(strings.TrimSpace(string(out[:])),
+		"\n")[0], "=")[1]
 }
 
 type contState struct {

@@ -15,7 +15,7 @@ Even though **dogi** was originally inspired by [rocker](https://github.com/osrf
 ## Quickstart
 
 ```bash
-go install github.com/ntorresalberto/dogi@latest
+CGO_ENABLED=0 go install github.com/ntorresalberto/dogi@latest
 dogi run ubuntu
 
 # optional step to add autocompletion
@@ -135,4 +135,9 @@ You can fix it [like this](https://stackoverflow.com/questions/42965673/cant-run
 echo "alias dogi=$(go env GOPATH)/bin/dogi" >> ~/.bashrc
 source .bashrc
 ```
+
+**dogi: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.32' not found (required by dogi)**
+
+This error is usually caused by a container running an older version of glibc than your host system (where you compiled `dogi`).
+A possible cause of this is you didn't use `CGO_ENABLED=0` in the `go install`, as specified in #quickstart.
 
