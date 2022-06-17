@@ -21,6 +21,7 @@ if [ -z "${existing_group_by_gid}" ]; then groupadd -g "{{.ugid}}" "{{.username}
 useradd --no-log-init --no-create-home --uid "{{.uid}}" -s "/bin/bash" -c "{{.Name}}" -g "{{.ugid}}" -G "{{.gids}}" -d "{{.homedir}}" "{{.username}}"
 
 echo "{{.username}} ALL=NOPASSWD: ALL" >> /etc/sudoers.d/dogi
+sed -i '/secure_path/ s/^/#/' /etc/sudoers
 
 echo "- create homedir: {{.homedir}}"
 mkdir -pv "{{.homedir}}"
