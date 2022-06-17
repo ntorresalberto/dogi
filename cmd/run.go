@@ -389,6 +389,13 @@ Examples:
 
 			// create user script
 			if !noUserPtr {
+				// mount .ccache
+				ccacheDir := fmt.Sprintf("%s/.ccache", userObj.HomeDir)
+				if _, err := os.Stat(ccacheDir); !os.IsNotExist(err) {
+					dockerRunArgs = append(dockerRunArgs,
+						fmt.Sprintf("--volume=%s:%s", ccacheDir, ccacheDir))
+				}
+
 				// mount .ssh as read-only just in case
 				sshDir := fmt.Sprintf("%s/.ssh", userObj.HomeDir)
 				if _, err := os.Stat(sshDir); !os.IsNotExist(err) {
