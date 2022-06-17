@@ -62,8 +62,8 @@ Examples:
 ---------------------------------------------
 `, map[string]string{"execExamples": execExamples}),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(args)
-			fmt.Println(len(args))
+			// fmt.Println(args)
+			// fmt.Println(len(args))
 
 			nargs := len(args)
 			contName := ""
@@ -83,7 +83,7 @@ Examples:
 				syscall.Exit(1)
 			}
 
-			fmt.Printf("contName: %s\n", contName)
+			logger.Printf("contName: %s\n", contName)
 
 			if !noUserPtr {
 				userObj, err := user.Current()
@@ -97,7 +97,9 @@ Examples:
 				// try to use the same workdir as when container was launched
 				out, err := exec.Command("docker", "container",
 					"inspect", "-f", "{{ .Config.WorkingDir }}", contName).Output()
-				check(err)
+				if err != nil {
+					logger.Fatalf("container '%s' not available?", contName)
+				}
 				wd := strings.TrimSpace(string(out[:]))
 				if wd != "" {
 					workDirPtr = wd
