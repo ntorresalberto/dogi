@@ -58,8 +58,8 @@ func selectImage() string {
 
 	result := ""
 	prompt := &survey.Select{
-		Message: "Select an image:",
-		Options: options,
+		Message: "Select an image:\n  " + options[0] + "\n",
+		Options: options[1:],
 	}
 	if err := survey.AskOne(prompt, &result); err != nil {
 		fmt.Println(err.Error())

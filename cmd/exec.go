@@ -33,8 +33,8 @@ func selectContainer() string {
 
 	result := ""
 	prompt := &survey.Select{
-		Message: "Select a container:",
-		Options: options,
+		Message: "Select container:\n  " + options[0] + "\n",
+		Options: options[1:],
 	}
 	if err := survey.AskOne(prompt, &result); err != nil {
 		fmt.Println(err.Error())
