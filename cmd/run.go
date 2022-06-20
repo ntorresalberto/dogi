@@ -345,7 +345,6 @@ Examples:
 
 			dockerRunArgs = append(dockerRunArgs, []string{
 				fmt.Sprintf("--workdir=%s", workDirPtr),
-				"--rm",
 				"--network=host",
 				"--volume=/tmp/.X11-unix:/tmp/.X11-unix",
 				fmt.Sprintf("--volume=%s:/.xauth", xauthfile.Name()),
@@ -362,6 +361,10 @@ Examples:
 				// "--volume=/etc/timezone:/etc/timezone:ro",
 			}...)
 			dockerRunArgs = append(dockerRunArgs, mountStrs...)
+
+			if !noRMPtr {
+				dockerRunArgs = append(dockerRunArgs, "--rm")
+			}
 
 			if !noCacherPtr {
 				logger.Println("using apt-cacher, disable with --no-cacher")
@@ -461,5 +464,6 @@ func init() {
 	runCmd.Flags().BoolVar(&noUserPtr, "no-user", false, "don't use user inside container (run as root inside)")
 	runCmd.Flags().StringVar(&workDirPtr, "workdir", "", "working directory when launching the container, will be mounted inside")
 	runCmd.Flags().BoolVar(&noCacherPtr, "no-cacher", false, "don't launch apt-cacher container")
+	runCmd.Flags().BoolVar(&noRMPtr, "rm", false, "don't launch with --rm (container will exist after exiting)")
 	runCmd.Flags().BoolVar(&homePtr, "home", false, "mount your complete home directory")
 }
