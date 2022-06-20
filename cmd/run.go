@@ -328,6 +328,13 @@ Examples:
 				mountStrs = append(mountStrs, fmt.Sprintf("--volume=%s:%s", userObj.HomeDir, userObj.HomeDir))
 			}
 
+			// add --device=/dev/dri if it exists
+			driDevice := fmt.Sprintf("/dev/dri")
+			if _, err := os.Stat(driDevice); !os.IsNotExist(err) {
+				mountStrs = append(mountStrs,
+					fmt.Sprintf("--device=%s", driDevice))
+			}
+
 			dogiPath, err := os.Executable()
 			check(err)
 			logger.Printf("dogi path:%s", dogiPath)
@@ -349,7 +356,6 @@ Examples:
 				fmt.Sprintf("--env=TZ=%s", timeZone()),
 				// "--volume=/etc/localtime:/etc/localtime:ro",
 				// "--volume=/etc/timezone:/etc/timezone:ro",
-				"--device=/dev/dri",
 			}...)
 			dockerRunArgs = append(dockerRunArgs, mountStrs...)
 
