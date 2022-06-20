@@ -120,10 +120,10 @@ go run main.go
 
 **installing go**
 
-You need [golang](https://go.dev/doc/install) installed.
+You need [golang>=1.16](https://go.dev/doc/install) installed (check version with `go version`).
 On ubuntu, an updated version can easily be installed with **one of these** 2 ways:
 ```bash
-sudo apt install golang
+sudo apt install golang         # ubuntu >= 22.04
 sudo snap install go --classic
 ```
 
