@@ -332,9 +332,15 @@ Examples:
 				mountStrs = append(mountStrs, fmt.Sprintf("--volume=%s:%s", userObj.HomeDir, userObj.HomeDir))
 			}
 
+			// TODO: workaround for nvidia cards
 			// add --device=/dev/dri if it exists
 			driDevice := fmt.Sprintf("/dev/dri")
-			if _, err := os.Stat(driDevice); !os.IsNotExist(err) {
+			driCard1Device := fmt.Sprintf("/dev/dri/card1")
+			if _, err := os.Stat(driCard1Device); !os.IsNotExist(err) {
+				logger.Printf("WARNING: %s found, nvidia card?\n", driCard1Device)
+				logger.Printf("using workaround...\n")
+			} else {
+				logger.Printf("%s not found (mount intel igpu)\n", driCard1Device)
 				mountStrs = append(mountStrs,
 					fmt.Sprintf("--device=%s", driDevice))
 			}
