@@ -24,6 +24,8 @@ echo "{{.username}} ALL=NOPASSWD: ALL" >> /etc/sudoers.d/dogi
 sed -i '/secure_path/ s/^/#/' /etc/sudoers
 
 echo "- create homedir: {{.homedir}}"
+echo "PS1=\"🐳 \${PS1}\"" >> "/etc/skel/.bashrc"
+echo "PS1=\"🐳 \${PS1}\"" >> "/root/.bashrc"
 mkdir -pv "{{.homedir}}"
 mkhomedir_helper {{.username}}
 cp -nrv /etc/skel/. "{{.homedir}}"
