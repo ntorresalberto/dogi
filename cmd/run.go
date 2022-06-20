@@ -362,6 +362,13 @@ Examples:
 			}...)
 			dockerRunArgs = append(dockerRunArgs, mountStrs...)
 
+			// NOTE: this --security-opt is needed to avoid errors like:
+			// dbus[1570]: The last reference on a connection was dropped without closing the connection.
+			// This is a bug in an application. See dbus_connection_unref() documentation for details.
+			// Most likely, the application was supposed to call dbus_connection_close(), since this is a private connection.
+			// D-Bus not built with -rdynamic so unable to print a backtrace
+			dockerRunArgs = append(dockerRunArgs, "--security-opt=apparmor:unconfined")
+
 			if !noRMPtr {
 				dockerRunArgs = append(dockerRunArgs, "--rm")
 			}
