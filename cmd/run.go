@@ -285,7 +285,11 @@ Examples:
 			const displayEnvVar string = "DISPLAY"
 			displayEnv, ok := os.LookupEnv(displayEnvVar)
 			if !ok {
-				panic(fmt.Errorf("%s not set\n", displayEnvVar))
+				displayEnv = ":0"
+				logger.Printf("WARNING: env %s not set, using %s=%s\n",
+					displayEnvVar, displayEnvVar, displayEnv)
+			} else {
+				logger.Printf("env %s=%s\n", displayEnvVar, displayEnv)
 			}
 
 			xauthCmd := fmt.Sprintf("%s nlist %s | sed -e 's/^..../ffff/' | %s -f %s nmerge -",
@@ -348,7 +352,7 @@ Examples:
 				fmt.Sprintf("--volume=%s:/usr/local/bin/%s", dogiPath, appname),
 				"--env=XAUTHORITY=/.xauth",
 				"--env=QT_X11_NO_MITSHM=1",
-				"--env=DISPLAY",
+				fmt.Sprintf("--env=DISPLAY=%s", displayEnv),
 				"--env=TERM",
 				// TODO: actually this should be setup by tzdata package
 				// maybe it's better not to touch inside or set env var TZ?
