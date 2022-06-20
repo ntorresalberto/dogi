@@ -332,17 +332,10 @@ Examples:
 				mountStrs = append(mountStrs, fmt.Sprintf("--volume=%s:%s", userObj.HomeDir, userObj.HomeDir))
 			}
 
-			// TODO: workaround for nvidia cards
-			// add --device=/dev/dri if it exists
-			driDevice := fmt.Sprintf("/dev/dri")
 			driCard1Device := fmt.Sprintf("/dev/dri/card1")
 			if _, err := os.Stat(driCard1Device); !os.IsNotExist(err) {
-				logger.Printf("WARNING: %s found, nvidia card?\n", driCard1Device)
-				logger.Printf("using workaround...\n")
-			} else {
-				logger.Printf("%s not found (mount intel igpu)\n", driCard1Device)
-				mountStrs = append(mountStrs,
-					fmt.Sprintf("--device=%s", driDevice))
+				logger.Printf("%s found, nvidia card? (3D might not work)\n",
+					driCard1Device)
 			}
 
 			dogiPath, err := os.Executable()
@@ -359,6 +352,7 @@ Examples:
 				"--env=QT_X11_NO_MITSHM=1",
 				fmt.Sprintf("--env=DISPLAY=%s", displayEnv),
 				"--env=TERM",
+				"--device=/dev/dri",
 				// TODO: actually this should be setup by tzdata package
 				// maybe it's better not to touch inside or set env var TZ?
 				// https://bugs.launchpad.net/ubuntu/+source/tzdata/+bug/1554806
