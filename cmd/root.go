@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 	"text/template"
 
@@ -80,6 +81,11 @@ Examples:
 			if len(args) == 0 {
 				if insideContainer() {
 					fmt.Println("You are " + Green("INSIDE") + " a container")
+					if out, err := exec.Command("cat", "/proc/1/cpuset").Output(); err == nil {
+						id := strings.TrimPrefix(strings.TrimSpace(string(out)),
+							"/docker/")[:12]
+						fmt.Println("container id: " + Green(id))
+					}
 				} else {
 					fmt.Println("You are " + Yellow("OUTSIDE") + " a container (host machine)")
 				}
