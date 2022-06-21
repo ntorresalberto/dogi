@@ -419,7 +419,9 @@ Examples:
 				check(err)
 				if !strings.Contains(string(out), "Ubuntu") {
 					logger.Printf("WARNING: '%s' is not based on Ubuntu?\n", imageName)
-					logger.Fatalf("dogi only supports ubuntu-based images for now\n")
+					logger.Printf("ERROR: dogi only supports ubuntu-based images for now\n")
+					logger.Printf("though you can run it as root with: --no-user\n")
+					logger.Fatalf("%s run --no-user %s\n", appname, imageName)
 				} else {
 					logger.Printf("ubuntu-based image detected\n")
 				}
