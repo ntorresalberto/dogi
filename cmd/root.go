@@ -36,6 +36,7 @@ func insideContainer() bool {
 }
 
 var (
+	privilegedPtr bool
 	noUserPtr     bool
 	noRMPtr       bool
 	noNethostPtr  bool

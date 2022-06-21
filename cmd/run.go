@@ -367,6 +367,11 @@ Examples:
 				dockerRunArgs = append(dockerRunArgs, "--network=host")
 			}
 
+			if privilegedPtr {
+				logger.Println("adding --privileged")
+				dockerRunArgs = append(dockerRunArgs, "--privileged")
+			}
+
 			// NOTE: this --security-opt is needed to avoid errors like:
 			// dbus[1570]: The last reference on a connection was dropped without closing the connection.
 			// This is a bug in an application. See dbus_connection_unref() documentation for details.
@@ -487,6 +492,7 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 	runCmd.Flags().BoolVar(&noUserPtr, "no-user", false, "don't use user inside container (run as root inside)")
 	runCmd.Flags().StringVar(&workDirPtr, "workdir", "", "working directory when launching the container, will be mounted inside")
+	runCmd.Flags().BoolVar(&privilegedPtr, "privileged", false, "add --privileged to docker run command")
 	runCmd.Flags().BoolVar(&noCacherPtr, "no-cacher", false, "don't launch apt-cacher container")
 	runCmd.Flags().BoolVar(&noRMPtr, "no-rm", false, "don't launch with --rm (container will exist after exiting)")
 	runCmd.Flags().BoolVar(&noNethostPtr, "no-nethost", false, "don't launch with --network=host")
