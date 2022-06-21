@@ -362,6 +362,13 @@ Examples:
 			}...)
 			dockerRunArgs = append(dockerRunArgs, mountStrs...)
 
+			// if --name flag was provided
+			if contNamePtr != "" {
+				flag := fmt.Sprintf("--name=%s", contNamePtr)
+				logger.Printf("set container name: %s", contNamePtr)
+				dockerRunArgs = append(dockerRunArgs, flag)
+			}
+
 			if !noNethostPtr {
 				logger.Println("adding --network=host")
 				dockerRunArgs = append(dockerRunArgs, "--network=host")
@@ -491,6 +498,7 @@ Examples:
 func init() {
 	rootCmd.AddCommand(runCmd)
 	runCmd.Flags().BoolVar(&noUserPtr, "no-user", false, "don't use user inside container (run as root inside)")
+	runCmd.Flags().StringVar(&contNamePtr, "name", "", "change the container name")
 	runCmd.Flags().StringVar(&workDirPtr, "workdir", "", "working directory when launching the container, will be mounted inside")
 	runCmd.Flags().BoolVar(&privilegedPtr, "privileged", false, "add --privileged to docker run command")
 	runCmd.Flags().BoolVar(&noCacherPtr, "no-cacher", false, "don't launch apt-cacher container")
