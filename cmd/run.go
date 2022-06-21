@@ -414,6 +414,16 @@ Examples:
 
 			// create user script
 			if !noUserPtr {
+				out, err := exec.Command("docker", "run", "--rm", "--tty",
+					imageName, "cat", "/etc/os-release").Output()
+				check(err)
+				if !strings.Contains(string(out), "Ubuntu") {
+					logger.Printf("WARNING: '%s' is not based on Ubuntu?\n", imageName)
+					logger.Fatalf("dogi only supports ubuntu-based images for now\n")
+				} else {
+					logger.Printf("ubuntu-based image detected\n")
+				}
+
 				// mount .ccache
 				ccacheDir := fmt.Sprintf("%s/.ccache", userObj.HomeDir)
 				if _, err := os.Stat(ccacheDir); !os.IsNotExist(err) {
