@@ -344,7 +344,6 @@ Examples:
 
 			dockerRunArgs = append(dockerRunArgs, []string{
 				fmt.Sprintf("--workdir=%s", workDirPtr),
-				"--network=host",
 				"--volume=/tmp/.X11-unix:/tmp/.X11-unix",
 				fmt.Sprintf("--volume=%s:/.xauth", xauthfile.Name()),
 				fmt.Sprintf("--volume=%s:/usr/local/bin/%s", dogiPath, appname),
@@ -361,6 +360,11 @@ Examples:
 				// "--volume=/etc/timezone:/etc/timezone:ro",
 			}...)
 			dockerRunArgs = append(dockerRunArgs, mountStrs...)
+
+			if !noNethostPtr {
+				logger.Println("adding --network=host")
+				dockerRunArgs = append(dockerRunArgs, "--network=host")
+			}
 
 			// NOTE: this --security-opt is needed to avoid errors like:
 			// dbus[1570]: The last reference on a connection was dropped without closing the connection.
@@ -471,6 +475,7 @@ func init() {
 	runCmd.Flags().BoolVar(&noUserPtr, "no-user", false, "don't use user inside container (run as root inside)")
 	runCmd.Flags().StringVar(&workDirPtr, "workdir", "", "working directory when launching the container, will be mounted inside")
 	runCmd.Flags().BoolVar(&noCacherPtr, "no-cacher", false, "don't launch apt-cacher container")
-	runCmd.Flags().BoolVar(&noRMPtr, "rm", false, "don't launch with --rm (container will exist after exiting)")
+	runCmd.Flags().BoolVar(&noRMPtr, "no-rm", false, "don't launch with --rm (container will exist after exiting)")
+	runCmd.Flags().BoolVar(&noNethostPtr, "no-nethost", false, "don't launch with --network=host")
 	runCmd.Flags().BoolVar(&homePtr, "home", false, "mount your complete home directory")
 }

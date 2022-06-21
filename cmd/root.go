@@ -37,6 +37,7 @@ func insideContainer() bool {
 var (
 	noUserPtr     bool
 	noRMPtr       bool
+	noNethostPtr  bool
 	noCacherPtr   bool
 	homePtr       bool
 	workDirPtr    string
