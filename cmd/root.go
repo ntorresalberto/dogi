@@ -36,6 +36,7 @@ func insideContainer() bool {
 }
 
 var (
+	Version       = "dev"
 	privilegedPtr bool
 	noUserPtr     bool
 	noRMPtr       bool
@@ -86,6 +87,7 @@ Examples:
 					fmt.Println("You are " + Green("INSIDE") + " a container")
 					if out, err := exec.Command("cat", "/proc/1/cpuset").Output(); err == nil {
 						id := strings.TrimPrefix(strings.TrimSpace(string(out)),
+
 							"/docker/")[:12]
 						fmt.Println("container id: " + Green(id))
 						fmt.Printf("open a new tty instance with: ")
@@ -98,6 +100,7 @@ Examples:
 			}
 		},
 		SuggestionsMinimumDistance: 2,
+		Version:                    Version,
 	}
 )
 
