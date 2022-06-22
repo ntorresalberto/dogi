@@ -8,7 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cgoOn = false
+var (
+	cgoOff        = false
+	installCommit = ""
+)
 
 func getCommitHash() string {
 	out, err := exec.Command("git", "ls-remote", "https://"+githubUrl,
@@ -25,6 +28,15 @@ const updateExamples = `
   - Updates dogi to latest version
 
     {{.appname}} update
+
+  - Updates dogi to specific version (branch or commit hash)
+
+    {{.appname}} update --commit=aee8c7f
+    {{.appname}} update --commit=main
+
+  - Disable CGO in update:
+
+    {{.appname}} update --no-cgo
 `
 
 var updateCmd = &cobra.Command{
@@ -40,22 +52,30 @@ Examples:
 ---------------------------------------------
 `, map[string]string{"updateExamples": updateExamples}),
 	Run: func(cmd *cobra.Command, args []string) {
-		commitHash := getCommitHash()
+		if installCommit == "" {
+			installCommit = getCommitHash()
+		}
+		fmt.Println("len(installCommit)", len(installCommit))
+		if len(installCommit) > 8 {
+			installCommit = installCommit[:8]
+		}
+		fmt.Printf("install commit hash/branch: %s\n", Gray(installCommit))
+
 		versionArg := fmt.Sprintf("-X %s/cmd.Version=%s",
-			githubUrl, commitHash)
-		fmt.Printf("latest commit hash: %s\n", Gray(commitHash))
+			githubUrl, installCommit)
 
 		updArgs := []string{"env"}
-		if cgoOn {
+		if cgoOff {
 			updArgs = append(updArgs, "CGO_ENABLED=0")
 
 		}
 		updArgs = append(updArgs, "go", "install", "-a",
-			"-ldflags", versionArg, fmt.Sprintf("%s@latest", githubUrl))
+			"-ldflags", versionArg, fmt.Sprintf("%s@%s",
+				githubUrl, installCommit))
 		fmt.Println("command:", strings.Join(updArgs, " "))
 		updcmd := exec.Command(updArgs[0], updArgs...)
 		fmt.Printf("updating %s...", appname)
-		out, err := updcmd.Output()
+		out, err := updcmd.CombinedOutput()
 		if err != nil {
 			fmt.Println(string(out))
 			fmt.Println("exitCode:", updcmd.ProcessState.ExitCode())
@@ -72,5 +92,6 @@ Examples:
 
 func init() {
 	rootCmd.AddCommand(updateCmd)
-	updateCmd.Flags().BoolVar(&cgoOn, "cgo", false, "don't use CGO_ENABLED=0 for go install command")
+	updateCmd.Flags().BoolVar(&cgoOff, "no-cgo", false, "don't use CGO (CGO_ENABLED=0) for go install command")
+	updateCmd.Flags().StringVar(&installCommit, "commit", "", "update to specific commit hash or branch. default: latest")
 }
