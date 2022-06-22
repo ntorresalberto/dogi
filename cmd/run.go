@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -195,7 +196,84 @@ func setAptCacher() string {
 }
 
 func createGroupCommand(gid, groupName string) string {
-	return fmt.Sprintf("groupadd --gid %s %s", gid, groupName)
+	createGroupTempl := `
+outside_gid="{{.outside_gid}}"
+outside_gname="{{.outside_gname}}"
+
+
+errors=0
+group_exists=0
+
+echo "- check if gid ({{.outside_gid}}) is valid"
+inside_gid_bygid=$(getent group "{{.outside_gid}}" | cut -f3 -d: || true)
+inside_gid_bygname=$(getent group "{{.outside_gname}}" | cut -f3 -d: || true)
+# echo "    inside_gid_bygid:${inside_gid_bygid}"
+# echo "    inside_gid_bygname:${inside_gid_bygname}"
+
+if [ "${inside_gid_bygid}" ]; then
+  group_exists=1
+  if [ "${inside_gid_bygid}" != "{{.outside_gid}}" ]; then
+    echo "  gid (by gid) exists inside container exists and differs from outside:"
+    echo "  inside_gid_bygid:${inside_gid_bygid}, outside container: {{.outside_gid}}"
+    errors=1
+  fi
+fi
+
+if [ "${inside_gid_bygname}" ]; then
+  group_exists=1
+  if [ "${inside_gid_bygname}" != "{{.outside_gid}}" ]; then
+    echo "  gid (by gname) inside container exists and differs from outside:"
+    echo "  inside_gid_bygname:${inside_gid_bygname}, outside container: {{.outside_gid}}"
+    errors=1
+  fi
+fi
+
+echo "- check if group name ({{.outside_gname}}) is valid"
+inside_gname_bygid=$(getent group "{{.outside_gid}}" | cut -f1 -d: || true)
+inside_gname_bygname=$(getent group "{{.outside_gname}}" | cut -f1 -d: || true)
+# echo "    inside_gname_bygid:${inside_gname_bygid}"
+# echo "    inside_gname_bygname:${inside_gname_bygname}"
+
+if [ "${inside_gname_bygid}" ]; then
+  group_exists=1
+  if [ "${inside_gname_bygid}" != "{{.outside_gname}}" ]; then
+    echo "  groupname (by gid) exists inside container exists and differs from outside:"
+    echo "  inside_gname_bygid:${inside_gname_bygid}, outside container: {{.outside_gname}}"
+    errors=1
+  fi
+fi
+
+if [ "${inside_gname_bygname}" ]; then
+  group_exists=1
+  if [ "${inside_gname_bygname}" != "{{.outside_gname}}" ]; then
+    echo "  groupname (by gname) exists inside container exists and differs from outside:"
+    echo "  inside_gname_bygname:${inside_gname_bygname}, outside container: {{.outside_gname}}"
+    errors=1
+  fi
+fi
+
+# echo "  group_exists: ${group_exists}"
+# echo "        errors: ${errors}"
+if [ "${errors}" == "0" ]; then
+  if [ "${group_exists}" == "0" ]; then
+    echo "  gid {{.outside_gid}} not found inside container, create"
+    groupadd -g "{{.outside_gid}}" "{{.outside_gname}}";
+  else
+    echo "  gid {{.outside_gid}} ({{.outside_gname}}) exists inside container"
+  fi
+else
+  echo "Error: problems were found for group {{.outside_gname}} ({{.outside_gid}}), check log"
+  exit 1
+fi
+`
+	var out bytes.Buffer
+	err := template.Must(template.New("").Option("missingkey=error").Parse(createGroupTempl)).Execute(&out,
+		map[string]string{"outside_gid": gid,
+			"outside_gname": groupName,
+		})
+	check(err)
+
+	return out.String()
 }
 
 const runExamples = `
@@ -310,7 +388,7 @@ Examples:
 			createGroupsCmd := createGroupCommand(userObj.Gid, userObj.Username)
 			// TODO: apparently you can use --group-add video from docker run?
 			// http://wiki.ros.org/docker/Tutorials/Hardware%20Acceleration#ATI.2FAMD
-			toAddGroups := map[string]string{"video": ""}
+			toAddGroups := map[string]string{"video": "", "dip": ""}
 			groupIds, err := userObj.GroupIds()
 			check(err)
 			toAddGids := []string{}
@@ -326,7 +404,7 @@ Examples:
 				if _, ok := toAddGroups[group.Name]; ok {
 					toAddGroups[group.Name] = group.Gid
 					toAddGids = append(toAddGids, group.Gid)
-					createGroupsCmd += " && " + createGroupCommand(group.Gid, group.Name)
+					createGroupsCmd += createGroupCommand(group.Gid, group.Name)
 				}
 			}
 
@@ -465,11 +543,12 @@ Examples:
 				{
 					err := template.Must(template.New("").Option("missingkey=error").Parse(assets.CreateUserTemplate)).Execute(createUserFile,
 						map[string]string{"username": userObj.Username,
-							"homedir": userObj.HomeDir,
-							"uid":     userObj.Uid,
-							"ugid":    userObj.Gid,
-							"gids":    strings.Join(toAddGids, ","),
-							"Name":    userObj.Name,
+							"homedir":      userObj.HomeDir,
+							"uid":          userObj.Uid,
+							"ugid":         userObj.Gid,
+							"gids":         strings.Join(toAddGids, ","),
+							"Name":         userObj.Name,
+							"createGroups": createGroupsCmd,
 						})
 					check(err)
 				}
