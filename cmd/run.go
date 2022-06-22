@@ -309,9 +309,9 @@ Examples:
 {{ .runExamples}}
 ---------------------------------------------
 `, map[string]string{"runExamples": runExamples}),
-		FParseErrWhitelist: cobra.FParseErrWhitelist{
-			UnknownFlags: true,
-		},
+		// FParseErrWhitelist: cobra.FParseErrWhitelist{
+		// 	UnknownFlags: true,
+		// },
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			if len(args) != 0 {
 				return nil, cobra.ShellCompDirectiveNoFileComp
