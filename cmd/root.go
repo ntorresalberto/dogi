@@ -53,6 +53,7 @@ var (
 	Green   = Color("\033[1;32m%s\033[0m")
 	Yellow  = Color("\033[1;33m%s\033[0m")
 	Gray    = Color("\033[1;37m%s\033[0m")
+	Red     = Color("\033[1;31m%s\033[0m")
 	rootCmd = &cobra.Command{
 		Use:   "dogi",
 		Short: "docker made easier!",
