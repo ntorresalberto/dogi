@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"syscall"
 
 	"github.com/spf13/cobra"
 )
@@ -50,8 +49,6 @@ Examples:
 			"volume", "prune", "-f").Output()
 		fmt.Println(lastLine(out))
 		check(err)
-
-		syscall.Exit(0)
 	},
 }
 

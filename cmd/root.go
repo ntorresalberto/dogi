@@ -51,6 +51,7 @@ var (
 	}
 	Green   = Color("\033[1;32m%s\033[0m")
 	Yellow  = Color("\033[1;33m%s\033[0m")
+	Gray    = Color("\033[1;37m%s\033[0m")
 	rootCmd = &cobra.Command{
 		Use:   "dogi",
 		Short: "docker made easier!",
@@ -87,11 +88,13 @@ Examples:
 						id := strings.TrimPrefix(strings.TrimSpace(string(out)),
 							"/docker/")[:12]
 						fmt.Println("container id: " + Green(id))
+						fmt.Printf("open a new tty instance with: ")
+						fmt.Println(Gray(fmt.Sprintf("%s exec %s", appname, id[:12])))
 					}
 				} else {
 					fmt.Println("You are " + Yellow("OUTSIDE") + " a container (host machine)")
 				}
-				fmt.Printf("to see examples and docs: %s help\n", appname)
+				fmt.Println("to see examples and docs: " + Gray(fmt.Sprintf("%s help", appname)))
 			}
 		},
 		SuggestionsMinimumDistance: 2,
