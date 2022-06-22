@@ -388,7 +388,7 @@ Examples:
 			createGroupsCmd := createGroupCommand(userObj.Gid, userObj.Username)
 			// TODO: apparently you can use --group-add video from docker run?
 			// http://wiki.ros.org/docker/Tutorials/Hardware%20Acceleration#ATI.2FAMD
-			toAddGroups := map[string]string{"video": "", "dip": ""}
+			toAddGroups := map[string]string{"video": "", "realtime": ""}
 			groupIds, err := userObj.GroupIds()
 			check(err)
 			toAddGids := []string{}
