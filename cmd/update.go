@@ -8,6 +8,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var cgoOn = false
+
 func getCommitHash() string {
 	out, err := exec.Command("git", "ls-remote", "https://"+githubUrl,
 		"main").Output()
@@ -20,7 +22,7 @@ func getCommitHash() string {
 }
 
 const updateExamples = `
-  - Delete unused and/or dangling containers, images and volumes
+  - Updates dogi to latest version
 
     {{.appname}} update
 `
@@ -43,9 +45,13 @@ Examples:
 			githubUrl, commitHash)
 		fmt.Printf("latest commit hash: %s\n", Gray(commitHash))
 
-		updArgs := []string{"env", "CGO_ENABLED=0", "go",
-			"install", "-a", "-ldflags", versionArg,
-			fmt.Sprintf("%s@latest", githubUrl)}
+		updArgs := []string{"env"}
+		if cgoOn {
+			updArgs = append(updArgs, "CGO_ENABLED=0")
+
+		}
+		updArgs = append(updArgs, "go", "install", "-a",
+			"-ldflags", versionArg, fmt.Sprintf("%s@latest", githubUrl))
 		fmt.Println("command:", strings.Join(updArgs, " "))
 		updcmd := exec.Command(updArgs[0], updArgs...)
 		fmt.Printf("updating %s...", appname)
@@ -66,4 +72,5 @@ Examples:
 
 func init() {
 	rootCmd.AddCommand(updateCmd)
+	updateCmd.Flags().BoolVar(&cgoOn, "cgo", false, "don't use CGO_ENABLED=0 for go install command")
 }
