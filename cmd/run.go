@@ -416,7 +416,7 @@ Examples:
 				mountStrs = append(mountStrs, fmt.Sprintf("--volume=%s:%s", userObj.HomeDir, userObj.HomeDir))
 			}
 
-			driCard1Device := fmt.Sprintf("/dev/dri/card1")
+			driCard1Device := "/dev/dri/card1"
 			if _, err := os.Stat(driCard1Device); !os.IsNotExist(err) {
 				logger.Printf("%s found, nvidia card? (3D might not work)\n",
 					driCard1Device)

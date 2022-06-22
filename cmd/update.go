@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 
@@ -40,23 +39,21 @@ Examples:
 `, map[string]string{"updateExamples": updateExamples}),
 	Run: func(cmd *cobra.Command, args []string) {
 		commitHash := getCommitHash()
-		versionArg := fmt.Sprintf("-ldflags=\"-X %s/cmd.Version=%s\"",
+		versionArg := fmt.Sprintf("-X %s/cmd.Version=%s",
 			githubUrl, commitHash)
 		fmt.Printf("latest commit hash: %s\n", Gray(commitHash))
 
-		updArgs := []string{"go",
-			"install", versionArg,
+		updArgs := []string{"env", "CGO_ENABLED=0", "go",
+			"install", "-a", "-ldflags", versionArg,
 			fmt.Sprintf("%s@latest", githubUrl)}
 		fmt.Println("command:", strings.Join(updArgs, " "))
 		updcmd := exec.Command(updArgs[0], updArgs...)
-		updcmd.Env = append(os.Environ(),
-			"CGO_ENABLED=0",
-		)
-
 		fmt.Printf("updating %s...", appname)
 		out, err := updcmd.Output()
 		if err != nil {
 			fmt.Println(string(out))
+			fmt.Println("exitCode:", updcmd.ProcessState.ExitCode())
+			fmt.Println("err:", err)
 			fmt.Println("update " + Red("FAILED"))
 			fmt.Println("no internet?")
 		}

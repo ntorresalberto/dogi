@@ -1,4 +1,5 @@
 GIT_COMMIT := $(shell git describe --always --dirty)
+GOPATH=$(shell go env GOPATH)/bin
 
 build: format
 	@echo '- build'
@@ -11,14 +12,18 @@ install: format
 version:
 	@echo '- version: ${GIT_COMMIT}'
 
+vet:
+	@echo '- go vet'
+	@go vet ./...
+
 tidy:
 	@echo '- go mod tidy'
 	@go mod tidy
 
-format: version tidy
+format: version tidy vet
 	@echo '- format'
 	@go fmt ./...
 
 lint:
 	@echo '- lint'
-	@golangci-lint run ./...
+	@${GOPATH}/golangci-lint run ./...
