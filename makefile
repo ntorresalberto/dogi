@@ -1,5 +1,9 @@
 GIT_COMMIT := $(shell git describe --always --dirty)
 
+build: format
+	@echo '- build'
+	@env CGO_ENABLED=0 go build -ldflags="-X github.com/ntorresalberto/dogi/cmd.Version=$(GIT_COMMIT)"
+
 install: format
 	@echo '- install'
 	@env CGO_ENABLED=0 go install -ldflags="-X github.com/ntorresalberto/dogi/cmd.Version=$(GIT_COMMIT)" .
@@ -7,13 +11,13 @@ install: format
 version:
 	@echo '- version: ${GIT_COMMIT}'
 
-format: version
+tidy:
+	@echo '- go mod tidy'
+	@go mod tidy
+
+format: version tidy
 	@echo '- format'
 	@go fmt ./...
-
-build: version
-	@echo '- build'
-	@env CGO_ENABLED=0 go build -ldflags="-X github.com/ntorresalberto/dogi/cmd.Version=$(GIT_COMMIT)"
 
 lint:
 	@echo '- lint'

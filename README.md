@@ -12,7 +12,7 @@ It allows using rootless containers, running GUIs, quickly mounting your current
 
 Even though **dogi** was originally inspired by [rocker](https://github.com/osrf/rocker) and solves a similar problem (or the same), it aims to do so with minimum user effort. Additionally, it provides the ability to interact with the `docker` client directly ([transparent](#design-principles)).
 
-## Quickstart
+## Install & Try
 
 ```bash
 CGO_ENABLED=0 go install github.com/ntorresalberto/dogi@latest
@@ -107,13 +107,18 @@ You should find **dogi** useful if you:
 
 ## For developers
 
-### Compiling from source
+### Installing from source
 
 ```bash
 git clone https://github.com/ntorresalberto/dogi.git
 cd dogi
-go mod tidy
-go run main.go
+make install
+dogi -v         # test it!
+```
+
+Once installed, add autocompletion with:
+```bash
+echo 'source <(dogi completion bash)' >> ~/.bashrc
 ```
 
 ### Optional setup steps
