@@ -6,7 +6,7 @@ build: format
 
 install: format
 	@echo '- install'
-	@env CGO_ENABLED=0 go install -ldflags="-X github.com/ntorresalberto/dogi/cmd.Version=$(GIT_COMMIT)" .
+	@env CGO_ENABLED=0 go install -a -ldflags="-X github.com/ntorresalberto/dogi/cmd.Version=$(GIT_COMMIT)" .
 
 version:
 	@echo '- version: ${GIT_COMMIT}'

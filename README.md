@@ -15,7 +15,7 @@ Even though **dogi** was originally inspired by [rocker](https://github.com/osrf
 ## Install & Try
 
 ```bash
-CGO_ENABLED=0 go install github.com/ntorresalberto/dogi@latest
+CGO_ENABLED=0 go install -a github.com/ntorresalberto/dogi@latest
 dogi run ubuntu
 
 # optional step to add autocompletion

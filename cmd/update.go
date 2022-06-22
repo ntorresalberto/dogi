@@ -17,7 +17,7 @@ func getCommitHash() string {
 		fmt.Println("Error: no internet?")
 	}
 	check(err)
-	return strings.Fields(strings.TrimSpace(string(out)))[0]
+	return strings.Fields(strings.TrimSpace(string(out)))[0][:8]
 }
 
 const updateExamples = `
@@ -40,12 +40,15 @@ Examples:
 `, map[string]string{"updateExamples": updateExamples}),
 	Run: func(cmd *cobra.Command, args []string) {
 		commitHash := getCommitHash()
-		versionArg := fmt.Sprintf("-ldflags=\"-X github.com/ntorresalberto/dogi/cmd.Version=%s\"",
-			commitHash)
+		versionArg := fmt.Sprintf("-ldflags=\"-X %s/cmd.Version=%s\"",
+			githubUrl, commitHash)
 		fmt.Printf("latest commit hash: %s\n", Gray(commitHash))
 
-		updcmd := exec.Command("go",
-			"install", versionArg, ".")
+		updArgs := []string{"go",
+			"install", versionArg,
+			fmt.Sprintf("%s@latest", githubUrl)}
+		fmt.Println("command:", strings.Join(updArgs, " "))
+		updcmd := exec.Command(updArgs[0], updArgs...)
 		updcmd.Env = append(os.Environ(),
 			"CGO_ENABLED=0",
 		)
