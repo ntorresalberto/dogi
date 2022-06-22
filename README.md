@@ -22,6 +22,8 @@ dogi run ubuntu
 echo 'source <(dogi completion bash)' >> ~/.bashrc
 ```
 
+To update `dogi` use: `dogi update`
+
 **NOTE:** some [optional setup steps](#optional-setup-steps) might be required.
 
 ---
@@ -38,6 +40,13 @@ echo 'source <(dogi completion bash)' >> ~/.bashrc
 ---
 
 ### Examples
+
+- Update dogi
+
+```bash
+    dogi update
+    dogi update --commit=aee8c7f
+```
 
 - Launch a container capable of GUI applications
 
@@ -70,7 +79,6 @@ echo 'source <(dogi completion bash)' >> ~/.bashrc
     dogi run ubuntu -- bash -c "sudo apt install -y mesa-utils && glxgears"
     dogi run ubuntu --no-user -- bash -c "apt install -y mesa-utils && glxgears" # as root
 ```
-
 
 - Delete unused and/or dangling containers, images and volumes
 
