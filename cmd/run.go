@@ -16,6 +16,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func copyToContainer(srcpath, dstpath, dstcont string) {
+	dst := fmt.Sprintf("%s:%s", dstcont, dstpath)
+	_, err := exec.Command("docker", "cp", "-aL", srcpath, dst).Output()
+	check(err)
+}
+
 func timeZone() string {
 	out, err := exec.Command("timedatectl", "show").Output()
 	check(err)
@@ -345,8 +351,6 @@ Examples:
 			dockerRunArgs = append(dockerRunArgs, []string{
 				fmt.Sprintf("--workdir=%s", workDirPtr),
 				"--volume=/tmp/.X11-unix:/tmp/.X11-unix",
-				fmt.Sprintf("--volume=%s:/.xauth", xauthfile.Name()),
-				fmt.Sprintf("--volume=%s:/usr/local/bin/%s", dogiPath, appname),
 				"--env=XAUTHORITY=/.xauth",
 				"--env=QT_X11_NO_MITSHM=1",
 				fmt.Sprintf("--env=DISPLAY=%s", displayEnv),
@@ -480,15 +484,30 @@ Examples:
 			// run command end
 			// ********************************************************
 			// ********************************************************
+
 			logger.Println("entrypoint:", entrypoint)
 
-			dockerArgs := merge([]string{dockerCmd, cmd.CalledAs()},
+			dockerArgs := merge([]string{dockerCmd, "create"},
 				dockerRunArgs,
 				entrypoint)
+
 			logger.Println("docker command: ", strings.Join(merge(dockerArgs), " "))
 
+			out, err := exec.Command(dockerArgs[0], dockerArgs[1:]...).Output()
+			if err != nil {
+				fmt.Println(string(out))
+				syscall.Exit(1)
+			}
+			contId := strings.TrimSpace(string(out))
+
+			copyToContainer(xauthfile.Name(), "/.xauth", contId)
+			copyToContainer(dogiPath, fmt.Sprintf("/usr/local/bin/%s", appname), contId)
+
+			logger.Println("attach to container")
+			logger.Printf("docker start -ai %s\n", contId[:12])
 			// syscall exec is used to replace the current process
-			check(syscall.Exec(dockerBinPath(), dockerArgs, os.Environ()))
+			check(syscall.Exec(dockerBinPath(),
+				[]string{"docker", "start", "-ai", contId}, os.Environ()))
 
 		},
 	}
