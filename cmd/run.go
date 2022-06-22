@@ -200,21 +200,22 @@ func createGroupCommand(gid, groupName string) string {
 outside_gid="{{.outside_gid}}"
 outside_gname="{{.outside_gname}}"
 
+echo "  - {{.outside_gname}} (gid {{.outside_gid}})"
 
 errors=0
 group_exists=0
 
-echo "- check if gid ({{.outside_gid}}) is valid"
+echo "    . check gid {{.outside_gid}} is valid"
 inside_gid_bygid=$(getent group "{{.outside_gid}}" | cut -f3 -d: || true)
 inside_gid_bygname=$(getent group "{{.outside_gname}}" | cut -f3 -d: || true)
-# echo "    inside_gid_bygid:${inside_gid_bygid}"
-# echo "    inside_gid_bygname:${inside_gid_bygname}"
+# echo "      inside_gid_bygid:${inside_gid_bygid}"
+# echo "      inside_gid_bygname:${inside_gid_bygname}"
 
 if [ "${inside_gid_bygid}" ]; then
   group_exists=1
   if [ "${inside_gid_bygid}" != "{{.outside_gid}}" ]; then
-    echo "  gid (by gid) exists inside container exists and differs from outside:"
-    echo "  inside_gid_bygid:${inside_gid_bygid}, outside container: {{.outside_gid}}"
+    echo "   -> gid (by gid) exists inside container exists and differs from outside:"
+    echo "   -> inside_gid_bygid:${inside_gid_bygid}, outside container: {{.outside_gid}}"
     errors=1
   fi
 fi
@@ -222,23 +223,23 @@ fi
 if [ "${inside_gid_bygname}" ]; then
   group_exists=1
   if [ "${inside_gid_bygname}" != "{{.outside_gid}}" ]; then
-    echo "  gid (by gname) inside container exists and differs from outside:"
-    echo "  inside_gid_bygname:${inside_gid_bygname}, outside container: {{.outside_gid}}"
+    echo "   -> gid (by gname) inside container exists and differs from outside:"
+    echo "   -> inside_gid_bygname:${inside_gid_bygname}, outside container: {{.outside_gid}}"
     errors=1
   fi
 fi
 
-echo "- check if group name ({{.outside_gname}}) is valid"
+echo "    . check group name {{.outside_gname}} is valid"
 inside_gname_bygid=$(getent group "{{.outside_gid}}" | cut -f1 -d: || true)
 inside_gname_bygname=$(getent group "{{.outside_gname}}" | cut -f1 -d: || true)
-# echo "    inside_gname_bygid:${inside_gname_bygid}"
-# echo "    inside_gname_bygname:${inside_gname_bygname}"
+# echo "      inside_gname_bygid:${inside_gname_bygid}"
+# echo "      inside_gname_bygname:${inside_gname_bygname}"
 
 if [ "${inside_gname_bygid}" ]; then
   group_exists=1
   if [ "${inside_gname_bygid}" != "{{.outside_gname}}" ]; then
-    echo "  groupname (by gid) exists inside container exists and differs from outside:"
-    echo "  inside_gname_bygid:${inside_gname_bygid}, outside container: {{.outside_gname}}"
+    echo "   -> groupname (by gid) exists inside container exists and differs from outside:"
+    echo "   -> inside_gname_bygid:${inside_gname_bygid}, outside container: {{.outside_gname}}"
     errors=1
   fi
 fi
@@ -246,8 +247,8 @@ fi
 if [ "${inside_gname_bygname}" ]; then
   group_exists=1
   if [ "${inside_gname_bygname}" != "{{.outside_gname}}" ]; then
-    echo "  groupname (by gname) exists inside container exists and differs from outside:"
-    echo "  inside_gname_bygname:${inside_gname_bygname}, outside container: {{.outside_gname}}"
+    echo "   -> groupname (by gname) exists inside container exists and differs from outside:"
+    echo "   -> inside_gname_bygname:${inside_gname_bygname}, outside container: {{.outside_gname}}"
     errors=1
   fi
 fi
@@ -256,10 +257,10 @@ fi
 # echo "        errors: ${errors}"
 if [ "${errors}" == "0" ]; then
   if [ "${group_exists}" == "0" ]; then
-    echo "  gid {{.outside_gid}} not found inside container, create"
+    echo "    => gid {{.outside_gid}} not found inside container, create"
     groupadd -g "{{.outside_gid}}" "{{.outside_gname}}";
   else
-    echo "  gid {{.outside_gid}} ({{.outside_gname}}) exists inside container"
+    echo "    => gid {{.outside_gid}} ({{.outside_gname}}) exists inside container"
   fi
 else
   echo "Error: problems were found for group {{.outside_gname}} ({{.outside_gid}}), check log"
@@ -405,6 +406,11 @@ Examples:
 					toAddGroups[group.Name] = group.Gid
 					toAddGids = append(toAddGids, group.Gid)
 					createGroupsCmd += createGroupCommand(group.Gid, group.Name)
+				}
+			}
+			for key, val := range toAddGroups {
+				if val == "" {
+					logger.Printf("user doesn't belong to group %s, won't add it to container", key)
 				}
 			}
 

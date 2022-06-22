@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
+echo "- create groups if necessary..."
+
 {{.createGroups}}
 
-echo "group_exists: ${group_exists}"
-echo "      errors: ${errors}"
-echo "-------------------------------"
+# echo "group_exists: ${group_exists}"
+# echo "      errors: ${errors}"
+# echo "-------------------------------"
 
 echo "- creating user..."
 existing_user_by_uid=`getent passwd "1000" | cut -f1 -d: || true`
@@ -26,7 +28,7 @@ echo "PS1=\"🐳 \${PS1}\"" >> "/etc/skel/.bashrc"
 echo "PS1=\"🐳 \${PS1}\"" >> "/root/.bashrc"
 mkdir -pv "{{.homedir}}"
 mkhomedir_helper {{.username}}
-cp -nrv /etc/skel/. "{{.homedir}}"
+cp -nr /etc/skel/. "{{.homedir}}"
 chown {{.uid}}:{{.ugid}} "{{.homedir}}"
 
 echo "- setup matrix command!"
@@ -42,9 +44,9 @@ create_bash_script matrix \
                    'dogi'
 
 echo "- running apt update..."
-DEBIAN_FRONTEND=noninteractive apt-get -qq update > /dev/null
+env DEBIAN_FRONTEND=noninteractive apt-get -qq update > /dev/null
 echo "- installing sudo, tzdata, vim..."
-DEBIAN_FRONTEND=noninteractive apt-get -qq install sudo tzdata vim > /dev/null
+env DEBIAN_FRONTEND=noninteractive apt-get -qq install sudo tzdata vim > /dev/null
 echo "{{.username}} ALL=NOPASSWD: ALL" >> /etc/sudoers.d/dogi
 sed -i '/secure_path/ s/^/#/' /etc/sudoers
 
