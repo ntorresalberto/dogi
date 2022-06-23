@@ -44,7 +44,7 @@ func sessionPids() []int {
 
 func runInstance() string {
 	ppid := os.Getppid()
-	fmt.Println("ppid:", ppid)
+	// fmt.Println("ppid:", ppid)
 	pids := sessionPids()
 	for k, pid := range pids {
 		if ppid == pid && k > 0 {
