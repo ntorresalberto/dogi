@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sort"
+	"strconv"
 	"strings"
 	"syscall"
 	"text/template"
@@ -19,6 +21,41 @@ const (
 	githubUrl = "github.com/ntorresalberto/dogi"
 	dockerCmd = "docker"
 )
+
+func sessionPids() []int {
+	out, err := exec.Command("ps", "-s").Output()
+	check(err)
+	lines := strings.Split(strings.TrimSpace(string(out[:])), "\n")
+
+	pids := []int{}
+	for _, line := range lines[1:] {
+		pidField := strings.Fields(line)[1]
+		pid64, err := strconv.ParseInt(pidField, 10, 32)
+		if err != nil {
+			fmt.Printf("Error: failed to strconv.ParseInt(%s, 10, 64)\n",
+				pidField)
+		}
+		check(err)
+		pids = append(pids, int(pid64))
+	}
+	sort.Ints(pids)
+	return pids
+}
+
+func runInstance() string {
+	ppid := os.Getppid()
+	fmt.Println("ppid:", ppid)
+	pids := sessionPids()
+	for k, pid := range pids {
+		if ppid == pid && k > 0 {
+			return Blue("(exec session)")
+		}
+		if pid > ppid {
+			return Blue("(run session)")
+		}
+	}
+	return ""
+}
 
 func Color(colorString string) func(...interface{}) string {
 	sprint := func(args ...interface{}) string {
@@ -50,10 +87,11 @@ var (
 		"--interactive",
 		"--tty",
 	}
+	Red     = Color("\033[1;31m%s\033[0m")
 	Green   = Color("\033[1;32m%s\033[0m")
 	Yellow  = Color("\033[1;33m%s\033[0m")
+	Blue    = Color("\033[1;34m%s\033[0m")
 	Gray    = Color("\033[1;37m%s\033[0m")
-	Red     = Color("\033[1;31m%s\033[0m")
 	rootCmd = &cobra.Command{
 		Use:   "dogi",
 		Short: "docker made easier!",
@@ -85,19 +123,19 @@ Examples:
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				if insideContainer() {
-					fmt.Println("You are " + Green("INSIDE") + " a container")
+					fmt.Println("You are " + Green("INSIDE") + " a container " + runInstance())
 					if out, err := exec.Command("cat", "/proc/1/cpuset").Output(); err == nil {
 						id := strings.TrimPrefix(strings.TrimSpace(string(out)),
 
 							"/docker/")[:12]
 						fmt.Println("container id: " + Green(id))
 						fmt.Printf("open a new tty instance with: ")
-						fmt.Println(Gray(fmt.Sprintf("%s exec %s", appname, id[:12])))
+						fmt.Println(Blue(fmt.Sprintf("%s exec %s", appname, id[:12])))
 					}
 				} else {
 					fmt.Println("You are " + Yellow("OUTSIDE") + " a container (host machine)")
 				}
-				fmt.Println("to see examples and docs: " + Gray(fmt.Sprintf("%s help", appname)))
+				fmt.Println("to see examples and docs: " + Blue(fmt.Sprintf("%s help", appname)))
 			}
 		},
 		SuggestionsMinimumDistance: 2,
