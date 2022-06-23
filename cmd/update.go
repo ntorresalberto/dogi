@@ -55,7 +55,7 @@ Examples:
 		if installCommit == "" {
 			installCommit = getCommitHash()
 		}
-		fmt.Println("len(installCommit)", len(installCommit))
+		// fmt.Println("len(installCommit)", len(installCommit))
 		if len(installCommit) > 8 {
 			installCommit = installCommit[:8]
 		}
