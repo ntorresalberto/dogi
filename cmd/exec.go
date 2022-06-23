@@ -20,6 +20,13 @@ const execExamples = `
     {{.appname}} exec <container-name>
 `
 
+func userContainer(contName string) bool {
+	out, err := exec.Command("docker", "container",
+		"inspect", "-f", "{{ .Args  }}", contName).Output()
+	check(err)
+	return strings.Contains(string(out), appname)
+}
+
 func selectContainer() string {
 	out, err := exec.Command("docker", "ps").Output()
 	check(err)
@@ -86,12 +93,15 @@ Examples:
 			logger.Printf("contName: %s\n", contName)
 
 			if !noUserPtr {
-				userObj, err := user.Current()
-				check(err)
-
-				logger.Println("username:", userObj.Username)
-				dockerRunArgs = append(dockerRunArgs,
-					fmt.Sprintf("--user=%s", userObj.Username))
+				if userContainer(contName) {
+					userObj, err := user.Current()
+					check(err)
+					logger.Println("username:", userObj.Username)
+					dockerRunArgs = append(dockerRunArgs,
+						fmt.Sprintf("--user=%s", userObj.Username))
+				} else {
+					logger.Println("WARNING: container launched as root, won't use current user")
+				}
 			}
 			if !workDirProvided() {
 				// try to use the same workdir as when container was launched
