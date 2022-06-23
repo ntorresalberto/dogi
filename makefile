@@ -27,3 +27,7 @@ format: version tidy vet
 lint:
 	@echo '- lint'
 	@${GOPATH}/golangci-lint run ./...
+
+count:
+	@echo '- count'
+	@${GOPATH}/gocloc main.go assets/createUser.sh.in assets/assets.go cmd/
