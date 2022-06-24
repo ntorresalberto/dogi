@@ -51,7 +51,7 @@ func runInstance() string {
 			return Blue("(exec session)")
 		}
 		if pid > ppid {
-			return Blue("(run session)")
+			return Blue("(run session)") + string(" ⚡")
 		}
 	}
 	return ""
