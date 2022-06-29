@@ -17,6 +17,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var copyToContainerFiles = map[string]string{}
+
+func addCopyToContainerFile(srcpath, dstpath string) {
+	if _, ok := copyToContainerFiles[srcpath]; !ok {
+		copyToContainerFiles[srcpath] = dstpath
+	} else {
+		logger.Fatalf("%s already exists in copyToContainerFiles, please report this to the %s devs",
+			srcpath, appname)
+	}
+}
+
 func copyToContainer(srcpath, dstpath, dstcont string) {
 	dst := fmt.Sprintf("%s:%s", dstcont, dstpath)
 	_, err := exec.Command("docker", "cp", "-aL", srcpath, dst).Output()
@@ -349,9 +360,7 @@ Examples:
 			xauthfile, err := os.CreateTemp("", fmt.Sprintf(".%s*.xauth", appname))
 			check(err)
 			logger.Println("temp xauth file:", xauthfile.Name())
-			// TODO: xauth file won't be removed because
-			// process is replaced at Exec, is there a way?
-			// defer os.Remove(xauthfile.Name())
+			addCopyToContainerFile(xauthfile.Name(), "/.xauth")
 
 			xauthCmdPath, err := exec.LookPath("xauth")
 			check(err)
@@ -467,9 +476,9 @@ Examples:
 			}
 
 			if !noCacherPtr {
-				logger.Println("using apt-cacher, disable with --no-cacher")
-				dockerRunArgs = append(dockerRunArgs,
-					fmt.Sprintf("--volume=%s:/etc/apt/apt.conf.d/01proxy", setAptCacher()))
+				logger.Println("using apt-cacher, disable it with --no-cacher")
+				file := setAptCacher()
+				addCopyToContainerFile(file, "/etc/apt/apt.conf.d/01proxy")
 			}
 
 			// figure out the command to execute (image default or provided)
@@ -574,8 +583,10 @@ Examples:
 			}
 			contId := strings.TrimSpace(string(out))
 
-			copyToContainer(xauthfile.Name(), "/.xauth", contId)
-			copyToContainer(dogiPath, fmt.Sprintf("/usr/local/bin/%s", appname), contId)
+			addCopyToContainerFile(dogiPath, fmt.Sprintf("/usr/local/bin/%s", appname))
+			for key, val := range copyToContainerFiles {
+				copyToContainer(key, val, contId)
+			}
 
 			logger.Println("attach to container")
 			logger.Printf("docker start -ai %s\n", contId[:12])
