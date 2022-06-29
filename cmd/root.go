@@ -72,6 +72,36 @@ func insideContainer() bool {
 	return true
 }
 
+func beforeDashArgs(cmd *cobra.Command, args []string) []string {
+	if cmd.ArgsLenAtDash() != -1 {
+		return args[:cmd.ArgsLenAtDash()]
+	}
+	return args
+}
+
+func afterDashArgs(cmd *cobra.Command, args []string) []string {
+	if cmd.ArgsLenAtDash() == -1 {
+		return []string{}
+	}
+	return args[cmd.ArgsLenAtDash():]
+}
+
+func only1Arg(cmd *cobra.Command, args []string, dockerType string) {
+	maxArgs := 1
+	beforeArgs := beforeDashArgs(cmd, args)
+	if len(beforeArgs) > maxArgs {
+		check(cmd.Help())
+		fmt.Printf("\nError: %s %s was called with more than %d arguments (%s)\n",
+			appname, cmd.CalledAs(),
+			maxArgs, strings.Join(beforeArgs, " "))
+		fmt.Printf("       but it can only be called with 0 or 1 argument (the docker %s)\n",
+			dockerType)
+		fmt.Println("       if you wanted to execute a specific command inside a container,")
+		fmt.Println("       you need to use '--' like in the examples above")
+		syscall.Exit(1)
+	}
+}
+
 var (
 	Version       = "dev"
 	privilegedPtr bool

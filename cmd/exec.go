@@ -18,6 +18,12 @@ const execExamples = `
     {{.appname}} exec
 
     {{.appname}} exec <container-name>
+
+  - Run a command inside an existing container
+
+    {{.appname}} exec -- make -C ~/myrepository/build
+
+    {{.appname}} exec <container-name> -- make -C ~/myrepository/build
 `
 
 func userContainer(contName string) bool {
@@ -68,28 +74,21 @@ Examples:
 {{.execExamples}}
 ---------------------------------------------
 `, map[string]string{"execExamples": execExamples}),
+		PreRun: func(cmd *cobra.Command, args []string) {
+			only1Arg(cmd, args, "container")
+		},
 		Run: func(cmd *cobra.Command, args []string) {
-			// fmt.Println(args)
-			// fmt.Println(len(args))
-
-			nargs := len(args)
+			// logger.Println("len(args):", len(args))
+			// logger.Println("args:", args)
+			// logger.Println("cmd.Flags().Args():", cmd.Flags().Args())
 			contName := ""
-			if nargs == 0 {
+			beforeArgs := beforeDashArgs(cmd, args)
+			if len(beforeArgs) == 0 {
 				contName = selectContainer()
 				logger.Printf("contId: %s", contName)
-			} else if nargs == 1 {
-				contName = args[0]
 			} else {
-				fmt.Printf("Error: exec command requires exactly 0 or 1 args (see example below)\n")
-				fmt.Printf("       but %d were args provided: %s\n",
-					nargs, strings.Join(args, " "))
-				fmt.Println("       Please use the exec command like:")
-				fmt.Printf("          - %s exec <container-name>\n", appname)
-				fmt.Printf("          - %s exec\n", appname)
-				fmt.Println("    (without arguments will ask you to choose between open containers)")
-				syscall.Exit(1)
+				contName = beforeArgs[0]
 			}
-
 			logger.Printf("contName: %s\n", contName)
 
 			if !noUserPtr {
@@ -123,7 +122,14 @@ Examples:
 
 			logger.Printf("docker args: %s\n", dockerRunArgs)
 
-			entrypoint := []string{contName, "bash"}
+			entrypoint := []string{contName}
+			afterdargs := afterDashArgs(cmd, args)
+			logger.Printf("afterDashArgs: %s\n", afterdargs)
+			if len(afterdargs) > 0 {
+				entrypoint = append(entrypoint, afterdargs...)
+			} else {
+				entrypoint = append(entrypoint, "bash")
+			}
 			logger.Printf("entrypoint: %s\n", entrypoint)
 			dockerArgs := merge([]string{dockerCmd, cmd.CalledAs()},
 				dockerRunArgs,

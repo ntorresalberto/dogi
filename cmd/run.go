@@ -320,21 +320,9 @@ Examples:
 			return imagesStartingWith(toComplete), cobra.ShellCompDirectiveNoFileComp
 		},
 		PreRun: func(cmd *cobra.Command, args []string) {
-			maxArgs := 1
-			beforeDashArgs := args
-			if cmd.ArgsLenAtDash() != -1 {
-				beforeDashArgs = args[:cmd.ArgsLenAtDash()]
-			}
-			if len(beforeDashArgs) > maxArgs {
-				check(cmd.Help())
-				fmt.Printf("\nError: %s %s was called with more than %d arguments (%s)\n",
-					appname, cmd.CalledAs(),
-					maxArgs, strings.Join(beforeDashArgs, " "))
-				fmt.Printf("       but it can only be called with 0 or 1 argument (the docker image)\n")
-				fmt.Println("       if you wanted to execute a specific command inside a container,")
-				fmt.Println("       you need to use '--' like in the examples above")
-				syscall.Exit(1)
-			}
+			fmt.Println("args:", args)
+			fmt.Println("cmd.Args:", cmd.Args)
+			only1Arg(cmd, args, "image")
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			// logger.Println("len(args):", len(args))
@@ -342,12 +330,13 @@ Examples:
 			// logger.Println("cmd.Flags().Args():", cmd.Flags().Args())
 			var entrypoint []string
 			imageName := ""
-			if len(args) == 0 {
+			beforeArgs := beforeDashArgs(cmd, args)
+			if len(beforeArgs) == 0 {
 				imageName = selectImage()
 				logger.Printf("imageId: %s", imageName)
 
 			} else {
-				imageName = args[0]
+				imageName = beforeArgs[0]
 			}
 
 			logger.Printf("imageName: %s\n", imageName)
