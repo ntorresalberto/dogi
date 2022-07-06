@@ -134,9 +134,9 @@ var (
 
 Examples:
 
-{{.execExamples}}
-----------------
 {{.runExamples}}
+----------------
+{{.execExamples}}
 ----------------
 {{.pruneExamples}}
 ---------------------------------------------
