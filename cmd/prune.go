@@ -21,7 +21,7 @@ func lastLine(out []byte) string {
 
 var pruneCmd = &cobra.Command{
 	Use:   "prune",
-	Short: "a docker space saver tool",
+	Short: "A docker space saver tool (deletes unused docker stuff)",
 	Long: helpTemplate(`
 It helps you clean up your PC from unused/dangling containers, images and volumes.
 ---------------------------------------------

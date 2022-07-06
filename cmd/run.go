@@ -310,7 +310,7 @@ const runExamples = `
 var (
 	runCmd = &cobra.Command{
 		Use:   "run [docker-image]",
-		Short: "a docker run wrapper",
+		Short: "A docker run wrapper (launch new containers)",
 		Long: helpTemplate(`
 {{.appname}} is a minimalist wrapper for docker run and docker exec to easily launch containers while sharing the working directory and use GUI applications.
 

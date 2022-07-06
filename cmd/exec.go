@@ -66,7 +66,7 @@ func selectContainer() string {
 var (
 	execCmd = &cobra.Command{
 		Use:   "exec [flags] [container-name]",
-		Short: "a docker exec wrapper",
+		Short: "A docker exec wrapper (use existing containers)",
 		Long: helpTemplate(`
 A docker exec wrapper.
 It allows opening a new tty instance (like an interactive terminal) into an existing container.

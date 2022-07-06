@@ -41,7 +41,7 @@ const updateExamples = `
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "a docker space saver tool",
+	Short: fmt.Sprintf("Update %s!", appname),
 	Long: helpTemplate(`
 It updates {{.appname}}.
 ---------------------------------------------

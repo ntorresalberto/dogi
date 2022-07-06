@@ -2,6 +2,7 @@ package cmd
 
 import (
 	// "context"
+	"fmt"
 	"syscall"
 
 	"github.com/spf13/cobra"
@@ -11,7 +12,7 @@ import (
 
 var debugCmd = &cobra.Command{
 	Use:   "debug",
-	Short: "a command to debug dogi",
+	Short: fmt.Sprintf("To debug %s!", appname),
 	Long:  `This command provides an interface to test and see internal dogi information.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// ctx := context.Background()
