@@ -13,13 +13,17 @@ import (
 )
 
 const execExamples = `
-  - Open a new terminal inside an existing container
+  - Open a new terminal inside an existing container (2 options)
 
     {{.appname}} exec
 
     {{.appname}} exec <container-name>
 
-  - Run a command inside an existing container
+  - Open a new terminal inside an existing container as root
+
+    {{.appname}} exec --no-user <container-name>
+
+  - Run a command inside an existing container (2 options)
 
     {{.appname}} exec -- make -C ~/myrepository/build
 

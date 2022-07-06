@@ -289,18 +289,18 @@ fi
 }
 
 const runExamples = `
-  - Launch a container capable of GUI applications
+  - Launch a container capable of GUI applications as user
 
     {{.appname}} run ubuntu
 
-----------------
+  - Launch a container capable of GUI applications as root
+
+    {{.appname}} run --no-user ubuntu
 
   - Launch a GUI command inside a container
-  xeyes is not installed in the ubuntu image by default.
+    (xeyes is not installed in the ubuntu image by default)
 
     {{.appname}} run ubuntu -- bash -c "sudo apt install -y x11-apps && xeyes"
-
-----------------
 
   - Launch an 3D accelerated GUI (opengl)
 
