@@ -29,8 +29,13 @@ func addCopyToContainerFile(srcpath, dstpath string) {
 }
 
 func copyToContainer(srcpath, dstpath, dstcont string) {
+	logger.Printf("cp %s -> %s:%s\n", srcpath, dstcont[:8], dstpath)
 	dst := fmt.Sprintf("%s:%s", dstcont, dstpath)
-	_, err := exec.Command("docker", "cp", "-aL", srcpath, dst).Output()
+	// fmt.Printf("docker cp -aL %s %s\n", srcpath, dst)
+	out, err := exec.Command("docker", "cp", "-aL", srcpath, dst).CombinedOutput()
+	if err != nil {
+		fmt.Println(string(out))
+	}
 	check(err)
 }
 
@@ -331,8 +336,8 @@ Examples:
 			return imagesStartingWith(toComplete), cobra.ShellCompDirectiveNoFileComp
 		},
 		PreRun: func(cmd *cobra.Command, args []string) {
-			fmt.Println("args:", args)
-			fmt.Println("cmd.Args:", cmd.Args)
+			// fmt.Println("args:", args)
+			// fmt.Println("cmd.Args:", cmd.Args)
 			only1Arg(cmd, args, "image")
 		},
 		Run: func(cmd *cobra.Command, args []string) {
