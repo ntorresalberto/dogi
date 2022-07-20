@@ -31,3 +31,5 @@ lint:
 count:
 	@echo '- count'
 	@${GOPATH}/gocloc main.go assets/createUser.sh.in assets/assets.go cmd/
+
+all: build lint count
