@@ -103,17 +103,19 @@ func only1Arg(cmd *cobra.Command, args []string, dockerType string) {
 }
 
 var (
-	Version       = "dev"
-	privilegedPtr bool
-	noUserPtr     bool
-	noRMPtr       bool
-	noNethostPtr  bool
-	noCacherPtr   bool
-	homePtr       bool
-	workDirPtr    string
-	contNamePtr   string
-	logger        = log.New(os.Stdout, appname+": ", log.Lshortfile)
-	dockerRunArgs = []string{
+	Version          = "dev"
+	nvidiaRuntimePtr bool
+	gpusAllPtr       bool
+	privilegedPtr    bool
+	noUserPtr        bool
+	noRMPtr          bool
+	noNethostPtr     bool
+	noCacherPtr      bool
+	homePtr          bool
+	workDirPtr       string
+	contNamePtr      string
+	logger           = log.New(os.Stdout, appname+": ", log.Lshortfile)
+	dockerRunArgs    = []string{
 		"--interactive",
 		"--tty",
 	}

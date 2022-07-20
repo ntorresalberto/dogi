@@ -452,6 +452,13 @@ Examples:
 			}...)
 			dockerRunArgs = append(dockerRunArgs, mountStrs...)
 
+			if gpusAllPtr {
+				dockerRunArgs = append(dockerRunArgs, "--gpus=all")
+			}
+			if nvidiaRuntimePtr {
+				dockerRunArgs = append(dockerRunArgs, "--runtime=nvidia")
+			}
+
 			// if --name flag was provided
 			if contNamePtr != "" {
 				flag := fmt.Sprintf("--name=%s", contNamePtr)
@@ -606,6 +613,8 @@ Examples:
 func init() {
 	rootCmd.AddCommand(runCmd)
 	runCmd.Flags().BoolVar(&noUserPtr, "no-user", false, "don't use user inside container (run as root inside)")
+	runCmd.Flags().BoolVar(&nvidiaRuntimePtr, "runtime-nvidia", false, "add --runtime=nvidia")
+	runCmd.Flags().BoolVar(&gpusAllPtr, "gpus-all", false, "add --gpus=all")
 	runCmd.Flags().StringVar(&contNamePtr, "name", "", "change the container name")
 	runCmd.Flags().StringVar(&workDirPtr, "workdir", "", "working directory when launching the container, will be mounted inside")
 	runCmd.Flags().BoolVar(&privilegedPtr, "privileged", false, "add --privileged to docker run command")
