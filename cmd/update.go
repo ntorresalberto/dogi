@@ -61,7 +61,7 @@ Examples:
 		}
 		fmt.Printf("install commit hash/branch: %s\n", Gray(installCommit))
 
-		versionArg := fmt.Sprintf("-X %s/cmd.Version=%s",
+		versionArg := fmt.Sprintf("-ldflags='-X %s/cmd.Version=%s'",
 			githubUrl, installCommit)
 
 		updArgs := []string{"env"}
@@ -70,7 +70,7 @@ Examples:
 
 		}
 		updArgs = append(updArgs, "go", "install", "-a",
-			"-ldflags", versionArg, fmt.Sprintf("%s@%s",
+			versionArg, fmt.Sprintf("%s@%s",
 				githubUrl, installCommit))
 		fmt.Println("command:", strings.Join(updArgs, " "))
 		updcmd := exec.Command(updArgs[0], updArgs...)
