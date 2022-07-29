@@ -3,11 +3,11 @@ GOPATH=$(shell go env GOPATH)/bin
 
 build: format
 	@echo '- build'
-	@env CGO_ENABLED=0 go build -ldflags="-X github.com/ntorresalberto/dogi/cmd.Version=$(GIT_COMMIT)"
+	@env go build -ldflags="-X github.com/ntorresalberto/dogi/cmd.Version=$(GIT_COMMIT)"
 
 install: format
 	@echo '- install'
-	@env CGO_ENABLED=0 go install -a -ldflags="-X github.com/ntorresalberto/dogi/cmd.Version=$(GIT_COMMIT)" .
+	@env go install -a -ldflags="-X github.com/ntorresalberto/dogi/cmd.Version=$(GIT_COMMIT)" .
 
 version:
 	@echo '- version: ${GIT_COMMIT}'
