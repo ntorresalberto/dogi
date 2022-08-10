@@ -439,7 +439,11 @@ Examples:
 				fmt.Sprintf("--workdir=%s", workDirPtr),
 				"--volume=/tmp/.X11-unix:/tmp/.X11-unix",
 				"--env=XAUTHORITY=/.xauth",
-				"--env=QT_X11_NO_MITSHM=1",
+				// either none or both together
+				// ref: https://stackoverflow.com/a/35040140
+				// NOTE: QT_X11_NO_MITSHM – stops Qt form using the MIT-SHM X11 extension.
+				// "--env=QT_X11_NO_MITSHM=1",
+				// "--env=QT_GRAPHICSSYSTEM=native",
 				fmt.Sprintf("--env=DISPLAY=%s", displayEnv),
 				"--env=TERM",
 				"--device=/dev/dri",
