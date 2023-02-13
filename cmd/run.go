@@ -480,6 +480,10 @@ Examples:
 				fmt.Sprintf("--env=DISPLAY=%s", displayEnv),
 				"--env=TERM",
 				"--device=/dev/dri",
+				// needed for realtime kernel
+				// https://stackoverflow.com/questions/47416870/checking-for-linux-capabilities-to-set-thread-priority
+				"--userns=host",
+				"--cap-add=SYS_NICE",
 				// TODO: actually this should be setup by tzdata package
 				// maybe it's better not to touch inside or set env var TZ?
 				// https://bugs.launchpad.net/ubuntu/+source/tzdata/+bug/1554806
