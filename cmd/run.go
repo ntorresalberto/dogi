@@ -19,6 +19,25 @@ import (
 
 var copyToContainerFiles = map[string]string{}
 
+func isSameDir(dir1, dir2 string) bool {
+	file_1, err_1 := os.Stat(dir1)
+
+	if err_1 != nil {
+
+		panic(err_1)
+
+	}
+
+	file_2, err_2 := os.Stat(dir2)
+
+	if err_2 != nil {
+
+		panic(err_2)
+
+	}
+	return os.SameFile(file_1, file_2)
+}
+
 func addCopyToContainerFile(srcpath, dstpath string) {
 	if _, ok := copyToContainerFiles[srcpath]; !ok {
 		copyToContainerFiles[srcpath] = dstpath
@@ -636,13 +655,23 @@ Examples:
 			}
 			contId := strings.TrimSpace(string(out))
 
-			addCopyToContainerFile(dogiPath, fmt.Sprintf("/usr/local/bin/%s", appname))
+			addCopyToContainerFile(dogiPath, fmt.Sprintf("/usr/bin/%s", appname))
 			for key, val := range copyToContainerFiles {
 				copyToContainer(key, val, contId)
 			}
 
 			logger.Println("attach to container")
 			logger.Printf("docker start -ai %s\n", contId[:12])
+
+			if !homePtr {
+				if isSameDir(workDirPtr, userObj.HomeDir) {
+					fmt.Println(Red("WARNING: ") + "current directory is HOME (read below) ⚡⚡")
+					fmt.Println("mounting home directory implies the container will use YOUR ~/.bashrc")
+					fmt.Println("the recommended usage is to launch dogi from your source directory")
+				}
+			}
+			announceEnteringContainer()
+
 			// syscall exec is used to replace the current process
 			check(syscall.Exec(dockerBinPath(),
 				[]string{"docker", "start", "-ai", contId}, os.Environ()))

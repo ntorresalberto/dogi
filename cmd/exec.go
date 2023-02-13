@@ -140,6 +140,7 @@ Examples:
 				entrypoint)
 			logger.Println("docker command: ", strings.Join(merge(dockerArgs), " "))
 
+			announceEnteringContainer()
 			// syscall exec is used to replace the current process
 			check(syscall.Exec(dockerBinPath(), dockerArgs, os.Environ()))
 		},

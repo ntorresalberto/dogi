@@ -50,7 +50,8 @@ env DEBIAN_FRONTEND=noninteractive apt-get -qq install sudo tzdata vim > /dev/nu
 echo "{{.username}} ALL=NOPASSWD: ALL" >> /etc/sudoers.d/dogi
 sed -i '/secure_path/ s/^/#/' /etc/sudoers
 
-echo "- done!"
+echo "- done, happy 🐳!"
+echo "- you now are INSIDE the container"
 if [ $# -eq 0 ]
 then
     echo "- switch to user {{.username}}"

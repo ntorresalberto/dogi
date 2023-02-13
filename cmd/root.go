@@ -22,6 +22,10 @@ const (
 	dockerCmd = "docker"
 )
 
+func announceEnteringContainer() {
+	fmt.Println("going " + Green("inside") + " container, happy 🐳!")
+}
+
 func sessionPids() []int {
 	out, err := exec.Command("ps", "-s").Output()
 	check(err)
@@ -51,7 +55,7 @@ func runInstance() string {
 			return Blue("(exec session)")
 		}
 		if pid > ppid {
-			return Blue("(run session)") + string(" ⚡")
+			return Blue("(run session)") + string(" ⚡⚡")
 		}
 	}
 	return ""
