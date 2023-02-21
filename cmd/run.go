@@ -126,6 +126,13 @@ func contRunning(name string) contState {
 	return constate
 }
 
+func ubuntuBased(imageName string) bool {
+	out, err := exec.Command("docker", "run", "--rm", "--tty",
+		imageName, "cat", "/etc/os-release").Output()
+	check(err)
+	return strings.Contains(string(out), "Ubuntu")
+}
+
 func setAptCacher() string {
 
 	baseName := "apt-cacher"
@@ -547,10 +554,17 @@ Examples:
 				dockerRunArgs = append(dockerRunArgs, "--rm")
 			}
 
-			if !noCacherPtr {
-				logger.Println("using apt-cacher, disable it with --no-cacher")
-				file := setAptCacher()
-				addCopyToContainerFile(file, "/etc/apt/apt.conf.d/01proxy")
+			ubuntuBasedImage := ubuntuBased(imageName)
+			if ubuntuBasedImage {
+				if !noCacherPtr {
+					logger.Println("using apt-cacher, disable it with --no-cacher")
+					file := setAptCacher()
+					addCopyToContainerFile(file, "/etc/apt/apt.conf.d/01proxy")
+				} else {
+					logger.Println("disabling apt-cacher (--no-cacher=ON)")
+				}
+			} else {
+				logger.Println("image is not ubuntu-based, disabling apt-cacher (--no-cacher=ON)")
 			}
 
 			// figure out the command to execute (image default or provided)
@@ -584,10 +598,7 @@ Examples:
 
 			// create user script
 			if !noUserPtr {
-				out, err := exec.Command("docker", "run", "--rm", "--tty",
-					imageName, "cat", "/etc/os-release").Output()
-				check(err)
-				if !strings.Contains(string(out), "Ubuntu") {
+				if !ubuntuBasedImage {
 					logger.Printf("WARNING: '%s' is not based on Ubuntu?\n", imageName)
 					logger.Printf("ERROR: dogi only supports ubuntu-based images for now\n")
 					logger.Printf("though you can run it as root with: --no-user\n")
