@@ -70,7 +70,10 @@ To update `dogi` use: `dogi update`
 
 ```bash
     dogi run ubuntu -- bash -c "sudo apt install -y x11-apps && xeyes"
-    dogi run ubuntu --no-user -- bash -c "apt install -y x11-apps && xeyes" # as root
+    dogi run ubuntu --no-user -- bash -c "apt update && apt install -y x11-apps && xeyes" # as root
+
+    dogi run fedora -- bash -c "sudo dnf install -y xeyes && xeyes"
+    dogi run fedora --no-user -- bash -c "dnf install -y xeyes && xeyes" # as root
 ```
 
 - Launch an 3D accelerated GUI (opengl)

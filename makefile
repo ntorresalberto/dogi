@@ -1,6 +1,8 @@
 GIT_COMMIT := $(shell git describe --always --dirty)
 GOPATH=$(shell go env GOPATH)/bin
 
+all: build lint count
+
 build: format
 	@echo '- build'
 	@env go build -ldflags="-X github.com/ntorresalberto/dogi/cmd.Version=$(GIT_COMMIT)"
@@ -31,5 +33,3 @@ lint:
 count:
 	@echo '- count'
 	@${GOPATH}/gocloc main.go assets/createUser.sh.in assets/assets.go cmd/
-
-all: build lint count

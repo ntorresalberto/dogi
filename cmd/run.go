@@ -126,15 +126,35 @@ func contRunning(name string) contState {
 	return constate
 }
 
-func ubuntuBased(imageName string) bool {
+var aptSupportedDistros = []string{"Ubuntu", "Debian"}
+
+func supportedDistros() []string {
+	return append(aptSupportedDistros, "Fedora")
+}
+
+func imageDistro(imageName string) string {
 	out, err := exec.Command("docker", "run", "--rm", "--tty",
 		imageName, "cat", "/etc/os-release").Output()
 	check(err)
-	return strings.Contains(string(out), "Ubuntu")
+
+	for _, val := range supportedDistros() {
+		if strings.Contains(string(out), val) {
+			return val
+		}
+	}
+	return ""
+}
+
+func aptCacherSupported(distro string) bool {
+	for _, val := range aptSupportedDistros {
+		if val == distro {
+			return true
+		}
+	}
+	return false
 }
 
 func setAptCacher() string {
-
 	baseName := "apt-cacher"
 	imgName := fmt.Sprintf("%s/%s", appname, baseName)
 
@@ -365,6 +385,7 @@ const runExamples = `
     (xeyes is not installed in the ubuntu image by default)
 
     {{.appname}} run ubuntu -- bash -c "sudo apt install -y x11-apps && xeyes"
+    {{.appname}} run fedora -- bash -c "sudo dnf install -y xeyes && xeyes"
 
   - Launch an 3D accelerated GUI (opengl)
 
@@ -454,7 +475,7 @@ Examples:
 			toAddGroups := map[string]string{"video": "", "realtime": ""}
 			groupIds, err := userObj.GroupIds()
 			check(err)
-			toAddGids := []string{}
+			toAddGnames := []string{}
 			// logger.Println("  groups:")
 			for k := range groupIds {
 				gid := groupIds[k]
@@ -466,7 +487,7 @@ Examples:
 				// logger.Printf("    - %s (%s)\n", group.Name, group.Gid)
 				if _, ok := toAddGroups[group.Name]; ok {
 					toAddGroups[group.Name] = group.Gid
-					toAddGids = append(toAddGids, group.Gid)
+					toAddGnames = append(toAddGnames, group.Name)
 					createGroupsCmd += createGroupCommand(group.Gid, group.Name)
 				}
 			}
@@ -554,8 +575,9 @@ Examples:
 				dockerRunArgs = append(dockerRunArgs, "--rm")
 			}
 
-			ubuntuBasedImage := ubuntuBased(imageName)
-			if ubuntuBasedImage {
+			distro := imageDistro(imageName) // empty if not supported
+
+			if aptCacherSupported(distro) {
 				if !noCacherPtr {
 					logger.Println("using apt-cacher, disable it with --no-cacher")
 					file := setAptCacher()
@@ -564,7 +586,7 @@ Examples:
 					logger.Println("disabling apt-cacher (--no-cacher=ON)")
 				}
 			} else {
-				logger.Println("image is not ubuntu-based, disabling apt-cacher (--no-cacher=ON)")
+				logger.Println("image is not apt-based, disabling apt-cacher (--no-cacher=ON)")
 			}
 
 			// figure out the command to execute (image default or provided)
@@ -598,13 +620,16 @@ Examples:
 
 			// create user script
 			if !noUserPtr {
-				if !ubuntuBasedImage {
-					logger.Printf("WARNING: '%s' is not based on Ubuntu?\n", imageName)
-					logger.Printf("ERROR: dogi only supports ubuntu-based images for now\n")
+				if distro == "" {
+					logger.Printf("WARNING: '%s' is not based on a supported distro?\n", imageName)
+					logger.Printf("ERROR: dogi only supports images based on these distros for now:\n")
+					for _, val := range supportedDistros() {
+						logger.Printf("  - %s\n", val)
+					}
 					logger.Printf("though you can run it as root with: --no-user\n")
 					logger.Fatalf("%s run --no-user %s\n", appname, imageName)
 				} else {
-					logger.Printf("ubuntu-based image detected\n")
+					logger.Printf("supported distro image detected: %s\n", distro)
 				}
 
 				// mount .ccache
@@ -633,7 +658,7 @@ Examples:
 							"homedir":      userObj.HomeDir,
 							"uid":          userObj.Uid,
 							"ugid":         userObj.Gid,
-							"gids":         strings.Join(toAddGids, ","),
+							"gnames":       strings.Join(toAddGnames, ","),
 							"Name":         userObj.Name,
 							"createGroups": createGroupsCmd,
 						})
@@ -676,7 +701,7 @@ Examples:
 
 			if !homePtr {
 				if isSameDir(workDirPtr, userObj.HomeDir) {
-					fmt.Println(Red("WARNING: ") + "current directory is HOME (read below) ⚡⚡")
+					fmt.Println(Red("WARNING: current directory is HOME") + " (read below) ⚡⚡")
 					fmt.Println("mounting home directory implies the container will use YOUR ~/.bashrc")
 					fmt.Println("the recommended usage is to launch dogi from your source directory")
 				}

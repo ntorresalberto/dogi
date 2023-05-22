@@ -21,7 +21,7 @@ if [ -n "${existing_user_by_name}" ]; then userdel -r "${existing_user_by_name}"
 # existing_group_by_gid=`getent group "1000" | cut -f1 -d: || true`
 # if [ -z "${existing_group_by_gid}" ]; then groupadd -g "{{.ugid}}" "{{.username}}"; fi
 
-useradd --no-log-init --no-create-home --uid "{{.uid}}" -s "/bin/bash" -c "{{.Name}}" -g "{{.ugid}}" -G "{{.gids}}" -d "{{.homedir}}" "{{.username}}"
+useradd --no-log-init --no-create-home --uid "{{.uid}}" -s "/bin/bash" -c "{{.Name}}" -g "{{.ugid}}" -G "{{.gnames}}" -d "{{.homedir}}" "{{.username}}"
 
 echo "- create homedir: {{.homedir}}"
 echo "PS1=\"🐳 \${PS1}\"" >> "/etc/skel/.bashrc"
@@ -43,22 +43,61 @@ create_bash_script() {
 create_bash_script matrix \
                    'dogi'
 
-echo "- running apt update..."
-env DEBIAN_FRONTEND=noninteractive apt-get -qq update > /dev/null
-echo "- installing sudo, tzdata, vim..."
-env DEBIAN_FRONTEND=noninteractive apt-get -qq install sudo tzdata vim > /dev/null
-echo "{{.username}} ALL=NOPASSWD: ALL" >> /etc/sudoers.d/dogi
-sed -i '/secure_path/ s/^/#/' /etc/sudoers
+###############################################################
+# setup sudo
+set +e
+distro_ubuntu=$(grep -i ubuntu /etc/os-release)
+distro_fedora=$(grep -i fedora /etc/os-release)
+distro_debian=$(grep -i debian /etc/os-release)
+set -e
+distro_unknown=""
+sudo_ok=""
+if [ -n "${distro_ubuntu}" ] || [ -n "${distro_debian}" ]; then
+    if [ -n "${distro_ubuntu}" ]; then
+        echo -n "- Ubuntu distro, "
+    else
+        echo -n "- Debian distro, "
+    fi
+    echo "running apt update..."
+    env DEBIAN_FRONTEND=noninteractive apt-get -qq update > /dev/null
+    echo "- installing sudo, tzdata, vim..."
+    env DEBIAN_FRONTEND=noninteractive apt-get -qq install sudo tzdata vim > /dev/null
+elif [ -n "${distro_fedora}" ]; then
+    echo "- Fedora distro, installing sudo, tzdata, vim..."
+    dnf install -y sudo tzdata vim > /dev/null
+else
+    distro_unknown="True"
+fi
+
+if [ -n "${distro_unknown}" ]; then
+    echo "- UNKNOWN distro."
+else
+    echo "{{.username}} ALL=NOPASSWD: ALL" >> /etc/sudoers.d/dogi
+    sed -i '/secure_path/ s/^/#/' /etc/sudoers
+    sudo_ok="True"
+fi
+###############################################################
 
 echo "- done, happy 🐳!"
 echo "- you now are INSIDE the container"
-if [ $# -eq 0 ]
-then
-    echo "- switch to user {{.username}}"
-    sudo -EHu {{.username}} bash
+
+if [ $# -eq 0 ]; then
+    if [ -n "${sudo_ok}" ]; then
+        echo "- switch to user {{.username}}"
+        sudo -EHu {{.username}} bash
+    else
+        echo "- sudo not setup, will run as root"
+        bash
+    fi
 fi
-echo "- run as user: $@"
-sudo -EHu {{.username}} "$@"
+
+if [ -n "${sudo_ok}" ]; then
+    echo "- run as user: $@"
+    sudo -EHu {{.username}} "$@"
+else
+    echo "- sudo not setup, will run as root"
+    $@
+fi
 
 # TODO: remove these used in tests
 # echo "- run as user: $*"
