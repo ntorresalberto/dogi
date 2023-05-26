@@ -132,6 +132,15 @@ func supportedDistros() []string {
 	return append(aptSupportedDistros, "Fedora")
 }
 
+func imageExists(imageName string) bool {
+	_, err := exec.Command("docker", "image", "inspect",
+		imageName).Output()
+	if err == nil {
+		return true
+	}
+	return false
+}
+
 func imageDistro(imageName string) string {
 	out, err := exec.Command("docker", "run", "--rm", "--tty",
 		imageName, "cat", "/etc/os-release").Output()
@@ -573,6 +582,11 @@ Examples:
 
 			if !noRMPtr {
 				dockerRunArgs = append(dockerRunArgs, "--rm")
+			}
+
+			if !imageExists(imageName) {
+				logger.Printf("Error: docker image or tag '%s' doesn't exist?", imageName)
+				logger.Fatalf("check: docker image inspect %s", imageName)
 			}
 
 			distro := imageDistro(imageName) // empty if not supported
