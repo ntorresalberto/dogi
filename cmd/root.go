@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	appname   = "dogi"
-	githubUrl = "github.com/ntorresalberto/dogi"
-	dockerCmd = "docker"
+	appname          = "dogi"
+	githubUrl        = "github.com/ntorresalberto/dogi"
+	dockerCmd        = "docker"
+	cidFileContainer = "/" + appname + ".cid"
 )
 
 func announceEnteringContainer() {
@@ -160,13 +161,16 @@ Examples:
 			if len(args) == 0 {
 				if insideContainer() {
 					fmt.Println("You are " + Green("INSIDE") + " a container " + runInstance())
-					if out, err := exec.Command("cat", "/proc/1/cpuset").Output(); err == nil {
-						id := strings.TrimPrefix(strings.TrimSpace(string(out)),
+					if out, err := exec.Command("cat", cidFileContainer).Output(); err == nil {
+						id := strings.TrimSpace(string(out))
+						const maxStr = 12
+						if len(id) > maxStr {
+							id = id[:maxStr]
+						}
 
-							"/docker/")[:12]
 						fmt.Println("container id: " + Green(id))
 						fmt.Printf("open a new tty instance with: ")
-						fmt.Println(Blue(fmt.Sprintf("%s exec %s", appname, id[:12])))
+						fmt.Println(Blue(fmt.Sprintf("%s exec %s", appname, id)))
 					}
 				} else {
 					fmt.Println("You are " + Yellow("OUTSIDE") + " a container (host machine)")

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"os/exec"
 	"os/user"
@@ -513,6 +514,10 @@ Examples:
 				logger.Println("mounting home directory")
 				mountStrs = append(mountStrs, fmt.Sprintf("--volume=%s:%s", userObj.HomeDir, userObj.HomeDir))
 			}
+
+			cidFile := fmt.Sprintf("%s/.%s%v.cid", os.TempDir(), appname, rand.Int63())
+			mountStrs = append(mountStrs, fmt.Sprintf("--cidfile=%s", cidFile))
+			mountStrs = append(mountStrs, fmt.Sprintf("--volume=%s:%s", cidFile, cidFileContainer))
 
 			driCard1Device := "/dev/dri/card1"
 			if _, err := os.Stat(driCard1Device); !os.IsNotExist(err) {
