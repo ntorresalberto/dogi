@@ -113,6 +113,7 @@ var (
 	gpusAllPtr       bool
 	privilegedPtr    bool
 	noUserPtr        bool
+	recentCtrPtr     bool
 	noRMPtr          bool
 	noNethostPtr     bool
 	noCacherPtr      bool

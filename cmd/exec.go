@@ -37,7 +37,7 @@ func userContainer(contName string) bool {
 	return strings.Contains(string(out), appname)
 }
 
-func selectContainer() string {
+func dockerPs() []string {
 	out, err := exec.Command("docker", "ps").Output()
 	check(err)
 
@@ -48,6 +48,15 @@ func selectContainer() string {
 		syscall.Exit(1)
 	}
 
+	return options
+}
+
+func recentContainer() string {
+	return strings.Fields(dockerPs()[1])[0]
+}
+
+func selectContainer() string {
+	options := dockerPs()
 	result := ""
 	prompt := &survey.Select{
 		Message: "Select container:\n  " + options[0] + "\n",
@@ -88,7 +97,12 @@ Examples:
 			contName := ""
 			beforeArgs := beforeDashArgs(cmd, args)
 			if len(beforeArgs) == 0 {
-				contName = selectContainer()
+				if !recentCtrPtr {
+					contName = selectContainer()
+				} else {
+					logger.Printf("use most recent container (--recent provided)\n")
+					contName = recentContainer()
+				}
 				logger.Printf("contId: %s", contName)
 			} else {
 				contName = beforeArgs[0]
@@ -150,5 +164,6 @@ Examples:
 func init() {
 	rootCmd.AddCommand(execCmd)
 	execCmd.Flags().BoolVar(&noUserPtr, "no-user", false, "don't use user inside container (run as root inside)")
+	execCmd.Flags().BoolVarP(&recentCtrPtr, "recent", "r", false, "use the most recent container")
 	execCmd.Flags().StringVar(&workDirPtr, "workdir", "", "working directory inside the container")
 }
