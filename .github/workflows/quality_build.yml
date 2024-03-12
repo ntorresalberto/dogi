@@ -21,14 +21,11 @@ jobs:
       with:
         go-version: '1.20'
 
-    - name: vet
-      run: make vet
-
     - name: lint
-      run: make lint
+      uses: golangci/golangci-lint-action@v4.0.0
 
-    - name: format
-      run: make format
-      
-    - name: build release
-      run: make release
+    - name: build
+      run: make build
+
+    - name: count
+      run: make count
