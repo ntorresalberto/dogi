@@ -14,19 +14,25 @@ It allows using rootless containers, running GUIs, quickly mounting your current
 
 Even though **dogi** was originally inspired by [rocker](https://github.com/osrf/rocker) and solves a similar problem (or the same), it aims to do so with minimum user effort. Additionally, it provides the ability to interact with the `docker` client directly ([transparent](#design-principles)).
 
-## Install & Try
+## Quickstart
 
 ```bash
-CGO_ENABLED=0 go install -a github.com/ntorresalberto/dogi@latest
+# install binary
+wget -qO- https://github.com/ntorresalberto/dogi/releases/download/rolling/dogi-rolling-linux-amd64.tar.gz | tar xvz -C ~/go/bin
+
+# add bash autocompletion
+echo 'source <(dogi completion bash)' >> ~/.bashrc
+
+# try it!
 dogi run ubuntu
 
-# optional step to add autocompletion
-echo 'source <(dogi completion bash)' >> ~/.bashrc
+# update it easily
+dogi update
 ```
 
-To update `dogi` use: `dogi update`
+Some [optional setup steps](#optional-setup-steps) might be required.
 
-**NOTE:** some [optional setup steps](#optional-setup-steps) might be required.
+**NOTE:** You can also install from source: `CGO_ENABLED=0 go install -a github.com/ntorresalberto/dogi@latest`
 
 ---
 
@@ -39,7 +45,7 @@ To update `dogi` use: `dogi update`
   - [Compiling from source](#compiling-from-source)
 - [Optional Setup Steps](#optional-setup-steps)
 
----
+<hr style="border:3px solid blue">
 
 ### Examples
 
@@ -91,6 +97,8 @@ To update `dogi` use: `dogi update`
     dogi prune
 ```
 
+<hr style="border:4px solid blue">
+
 ## Overview
 ### For whom?
 
@@ -117,6 +125,8 @@ You should find **dogi** useful if you:
 
 - Only supports ubuntu-based images (because of apt commands used)
 - Only supports X11 environments for GUI applications (because of xorg socket communication)
+
+<hr style="border:4px solid blue">
 
 ## For developers
 
@@ -145,6 +155,8 @@ sudo apt install golang         # ubuntu >= 22.04
 sudo snap install go --classic
 ```
 
+<hr style="border:1px solid blue">
+
 **bash: dogi: command not found**
 
 This error message means your `$PATH` doesn't include the go binaries path.
@@ -153,6 +165,9 @@ You can fix it [like this](https://stackoverflow.com/questions/42965673/cant-run
 echo "alias dogi=$(go env GOPATH)/bin/dogi" >> ~/.bashrc
 source .bashrc
 ```
+
+<hr style="border:1px solid blue">
+
 
 **dogi: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.32' not found (required by dogi)**
 
