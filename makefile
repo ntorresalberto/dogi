@@ -7,6 +7,10 @@ build: format
 	@echo '- build'
 	@env go build -ldflags="-X github.com/ntorresalberto/dogi/cmd.Version=$(GIT_COMMIT)"
 
+release:
+	@echo '- release'
+	@env CGO_ENABLED=0 go build -ldflags="-X github.com/ntorresalberto/dogi/cmd.Version=$(GIT_COMMIT)"
+
 install: format
 	@echo '- install'
 	@env go install -a -ldflags="-X github.com/ntorresalberto/dogi/cmd.Version=$(GIT_COMMIT)" .
