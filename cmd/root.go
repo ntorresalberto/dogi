@@ -120,7 +120,7 @@ var (
 	homePtr          bool
 	workDirPtr       string
 	contNamePtr      string
-	logger           = log.New(os.Stdout, appname+": ", log.Lshortfile)
+	logger           = log.New(os.Stdout, appname+": ", log.Lmsgprefix)
 	dockerRunArgs    = []string{
 		"--interactive",
 		"--tty",
