@@ -223,9 +223,7 @@ func dockerBinPath() (dockerBinPath string) {
 
 func merge(ss ...[]string) (s []string) {
 	for kss := range ss {
-		for k := range ss[kss] {
-			s = append(s, ss[kss][k])
-		}
+		s = append(s, ss[kss]...)
 	}
 	return
 }

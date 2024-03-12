@@ -136,10 +136,7 @@ func supportedDistros() []string {
 func imageExists(imageName string) bool {
 	_, err := exec.Command("docker", "image", "inspect",
 		imageName).Output()
-	if err == nil {
-		return true
-	}
-	return false
+	return err == nil
 }
 
 func imageDistro(imageName string) string {
