@@ -6,6 +6,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/ntorresalberto/dogi.svg)](https://pkg.go.dev/github.com/ntorresalberto/dogi)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ntorresalberto/dogi)](https://goreportcard.com/report/github.com/ntorresalberto/dogi)
+[![Build](https://github.com/ntorresalberto/dogi/actions/workflows/quality_build.yml/badge.svg)](https://github.com/ntorresalberto/dogi/actions)
 
 **dogi** is a [simple and transparent](#design-principles) wrapper for `docker run` (and `docker exec`) to make common tasks easier.
 It allows using rootless containers, running GUIs, quickly mounting your current directory and much more!
