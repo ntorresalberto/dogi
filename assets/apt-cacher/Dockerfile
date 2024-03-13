@@ -11,7 +11,7 @@
 # add this to container:
 # echo 'Acquire::http { Proxy "http://localhost:3142"; };' >> /etc/apt/apt.conf.d/01proxy
 # echo 'Acquire::http { Proxy "http://172.17.0.2:3142"; };' >> /etc/apt/apt.conf.d/01proxy
-FROM   ubuntu:20.04
+FROM   ubuntu:22.04
 
 VOLUME ["/var/cache/apt-cacher-ng"]
 RUN    apt-get update && apt-get install -y apt-cacher-ng \
