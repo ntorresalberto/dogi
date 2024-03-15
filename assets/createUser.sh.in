@@ -29,7 +29,9 @@ echo "PS1=\"🐳 \${PS1}\"" >> "/root/.bashrc"
 mkdir -pv "{{.homedir}}"
 mkhomedir_helper {{.username}}
 cp -nr /etc/skel/. "{{.homedir}}"
-chown {{.uid}}:{{.ugid}} "{{.homedir}}"
+find "{{.homedir}}" -maxdepth 1 \
+     -path "{{.homedir}}/.ssh" -prune \
+     -o -exec chown {{.uid}}:{{.ugid}} {} +
 
 echo "- setup matrix command!"
 create_bash_script() {
@@ -71,6 +73,7 @@ fi
 
 if [ -n "${distro_unknown}" ]; then
     echo "- UNKNOWN distro."
+    echo "failed to install packages sudo tzdata."
 else
     echo "{{.username}} ALL=NOPASSWD: ALL" >> /etc/sudoers.d/dogi
     sed -i '/secure_path/ s/^/#/' /etc/sudoers

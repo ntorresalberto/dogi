@@ -588,6 +588,7 @@ Examples:
 
 			if !imageExists(imageName) {
 				logger.Printf("Error: docker image or tag '%s' doesn't exist?", imageName)
+				logger.Printf("try using 'docker pull %s' first", imageName)
 				logger.Fatalf("check: docker image inspect %s", imageName)
 			}
 
@@ -606,7 +607,7 @@ Examples:
 			}
 
 			// figure out the command to execute (image default or provided)
-			logger.Println("cmd.ArgsLenAtDash():", cmd.ArgsLenAtDash())
+			// logger.Println("cmd.ArgsLenAtDash():", cmd.ArgsLenAtDash())
 
 			var execCommand []string
 			if cmd.ArgsLenAtDash() == -1 {
