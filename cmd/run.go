@@ -20,6 +20,68 @@ import (
 
 var copyToContainerFiles = map[string]string{}
 
+var userSingletonInstance *userSingletonType
+
+type userSingletonType struct {
+	*user.User
+}
+
+func userSingleton() *userSingletonType {
+	if userSingletonInstance == nil {
+		userObj, err := user.Current()
+		check(err)
+		userSingletonInstance = &userSingletonType{userObj}
+
+	}
+
+	return userSingletonInstance
+}
+
+type createGroupsCommand struct {
+	toAddGnames []string
+	cmd         string
+	gnames      string
+}
+
+func (m *userSingletonType) createGroupsCmd() createGroupsCommand {
+	if m == nil {
+		m = userSingleton()
+	}
+
+	groupsCmd := createGroupsCommand{}
+	groupsCmd.cmd = createGroupCommandStr(m.Gid, m.Username)
+	// TODO: apparently you can use --group-add video from docker run?
+	// http://wiki.ros.org/docker/Tutorials/Hardware%20Acceleration#ATI.2FAMD
+	toAddGroups := map[string]string{"video": "", "realtime": ""}
+	groupIds, err := m.GroupIds()
+	check(err)
+
+	// logger.Println("  groups:")
+	for k := range groupIds {
+		gid := groupIds[k]
+		group, err := user.LookupGroupId(gid)
+		if err != nil {
+			logger.Printf("    - gid %s not found\n", gid)
+			panic(err)
+		}
+		// logger.Printf("    - %s (%s)\n", group.Name, group.Gid)
+		if _, ok := toAddGroups[group.Name]; ok {
+			toAddGroups[group.Name] = group.Gid
+			groupsCmd.toAddGnames = append(groupsCmd.toAddGnames, group.Name)
+			groupsCmd.cmd += createGroupCommandStr(group.Gid, group.Name)
+		}
+	}
+	for key, val := range toAddGroups {
+		if val == "" {
+			logger.Printf("user doesn't belong to group %s, won't add it to container", key)
+		}
+	}
+
+	groupsCmd.gnames = strings.Join(groupsCmd.toAddGnames, ",")
+
+	return groupsCmd
+}
+
 func isSameDir(dir1, dir2 string) bool {
 	file_1, err_1 := os.Stat(dir1)
 
@@ -264,7 +326,7 @@ func setAptCacher() string {
 	return aptCacherFile.Name()
 }
 
-func createGroupCommand(gid, groupName string) string {
+func createGroupCommandStr(gid, groupName string) string {
 	createGroupTempl := `
 outside_gid="{{.outside_gid}}"
 outside_gname="{{.outside_gname}}"
@@ -474,43 +536,9 @@ Examples:
 			createXauthCmd := exec.Command(bashCmdPath, "-c", xauthCmd)
 			check(createXauthCmd.Run())
 
-			userObj, err := user.Current()
-			check(err)
-			createGroupsCmd := createGroupCommand(userObj.Gid, userObj.Username)
-			// TODO: apparently you can use --group-add video from docker run?
-			// http://wiki.ros.org/docker/Tutorials/Hardware%20Acceleration#ATI.2FAMD
-			toAddGroups := map[string]string{"video": "", "realtime": ""}
-			groupIds, err := userObj.GroupIds()
-			check(err)
-			toAddGnames := []string{}
-			// logger.Println("  groups:")
-			for k := range groupIds {
-				gid := groupIds[k]
-				group, err := user.LookupGroupId(gid)
-				if err != nil {
-					logger.Printf("    - gid %s not found\n", gid)
-					panic(err)
-				}
-				// logger.Printf("    - %s (%s)\n", group.Name, group.Gid)
-				if _, ok := toAddGroups[group.Name]; ok {
-					toAddGroups[group.Name] = group.Gid
-					toAddGnames = append(toAddGnames, group.Name)
-					createGroupsCmd += createGroupCommand(group.Gid, group.Name)
-				}
-			}
-			for key, val := range toAddGroups {
-				if val == "" {
-					logger.Printf("user doesn't belong to group %s, won't add it to container", key)
-				}
-			}
-
 			workDirProvided() // initializes working directory
 			logger.Printf("workdir: %s\n", workDirPtr)
 			mountStrs := []string{fmt.Sprintf("--volume=%s:%s", workDirPtr, workDirPtr)}
-			if homePtr {
-				logger.Println("mounting home directory")
-				mountStrs = append(mountStrs, fmt.Sprintf("--volume=%s:%s", userObj.HomeDir, userObj.HomeDir))
-			}
 
 			cidFile := fmt.Sprintf("%s/.%s%v.cid", os.TempDir(), appname, rand.Int63())
 			mountStrs = append(mountStrs, fmt.Sprintf("--cidfile=%s", cidFile))
@@ -636,7 +664,17 @@ Examples:
 			entrypoint = execCommand
 
 			// create user script
-			if !noUserPtr {
+			userObj := userSingleton()
+
+			// mount cache vol
+			dockerRunArgs = append(dockerRunArgs,
+				fmt.Sprintf("--volume=%s_cache_vol:%s/.cache",
+					appname, userObj.HomeDir))
+
+			if !noUserPtr && userObj.Uid == "0" {
+				logger.Printf("⚡⚡ WARNING: super user detected, did you use sudo?\n")
+				logger.Printf("sudo dogi can only run with --no-user\n")
+			} else if !noUserPtr && userObj.Uid != "0" {
 				if distro == "" {
 					logger.Printf("WARNING: '%s' is not based on a supported distro?\n", imageName)
 					logger.Printf("ERROR: dogi only supports images based on these distros for now:\n")
@@ -647,13 +685,6 @@ Examples:
 					logger.Fatalf("%s run --no-user %s\n", appname, imageName)
 				} else {
 					logger.Printf("supported distro image detected: %s\n", distro)
-				}
-
-				// mount .ccache
-				ccacheDir := fmt.Sprintf("%s/.ccache", userObj.HomeDir)
-				if _, err := os.Stat(ccacheDir); !os.IsNotExist(err) {
-					dockerRunArgs = append(dockerRunArgs,
-						fmt.Sprintf("--volume=%s:%s", ccacheDir, ccacheDir))
 				}
 
 				// mount .ssh as read-only just in case
@@ -670,14 +701,15 @@ Examples:
 				check(err)
 				logger.Println("create user script:", createUserFile.Name())
 				{
+					groupsCmd := userSingleton().createGroupsCmd()
 					err := template.Must(template.New("").Option("missingkey=error").Parse(assets.CreateUserTemplate)).Execute(createUserFile,
 						map[string]string{"username": userObj.Username,
 							"homedir":      userObj.HomeDir,
 							"uid":          userObj.Uid,
 							"ugid":         userObj.Gid,
-							"gnames":       strings.Join(toAddGnames, ","),
+							"gnames":       groupsCmd.gnames,
 							"Name":         userObj.Name,
-							"createGroups": createGroupsCmd,
+							"createGroups": groupsCmd.cmd,
 						})
 					check(err)
 				}
@@ -716,12 +748,10 @@ Examples:
 			logger.Println("attach to container")
 			logger.Printf("docker start -ai %s\n", contId[:12])
 
-			if !homePtr {
-				if isSameDir(workDirPtr, userObj.HomeDir) {
-					fmt.Println(Red("WARNING: current directory is HOME") + " (read below) ⚡⚡")
-					fmt.Println("mounting home directory implies the container will use YOUR ~/.bashrc")
-					fmt.Println("the recommended usage is to launch dogi from your source directory")
-				}
+			if isSameDir(workDirPtr, userSingleton().HomeDir) {
+				fmt.Println(Red("WARNING: current directory is HOME") + " (read below) ⚡⚡")
+				fmt.Println("mounting home directory implies the container will use YOUR ~/.bashrc")
+				fmt.Println("the recommended usage is to launch dogi from your source directory")
 			}
 			announceEnteringContainer()
 
@@ -744,5 +774,4 @@ func init() {
 	runCmd.Flags().BoolVar(&noCacherPtr, "no-cacher", false, "don't launch apt-cacher container")
 	runCmd.Flags().BoolVar(&noRMPtr, "no-rm", false, "don't launch with --rm (container will exist after exiting)")
 	runCmd.Flags().BoolVar(&noNethostPtr, "no-nethost", false, "don't launch with --network=host")
-	runCmd.Flags().BoolVar(&homePtr, "home", false, "mount your complete home directory")
 }

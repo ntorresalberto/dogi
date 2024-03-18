@@ -31,7 +31,8 @@ mkhomedir_helper {{.username}}
 cp -nr /etc/skel/. "{{.homedir}}"
 find "{{.homedir}}" -maxdepth 1 \
      -path "{{.homedir}}/.ssh" -prune \
-     -o -exec chown {{.uid}}:{{.ugid}} {} +
+     -o -exec chown "{{.uid}}:{{.ugid}}" {} +
+chown -R "{{.uid}}:{{.ugid}}" "{{.homedir}}/.cache"
 
 echo "- setup matrix command!"
 create_bash_script() {

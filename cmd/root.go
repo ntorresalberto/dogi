@@ -117,7 +117,6 @@ var (
 	noRMPtr          bool
 	noNethostPtr     bool
 	noCacherPtr      bool
-	homePtr          bool
 	workDirPtr       string
 	contNamePtr      string
 	logger           = log.New(os.Stdout, appname+": ", log.Lmsgprefix)
