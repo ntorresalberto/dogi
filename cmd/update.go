@@ -6,10 +6,12 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"syscall"
 )
 
 var (
 	cgoOff        = false
+	checkVersion  = false
 	installCommit = ""
 )
 
@@ -37,6 +39,10 @@ const updateExamples = `
   - Disable CGO in update:
 
     {{.appname}} update --no-cgo
+
+  - Check if on the latest version
+
+    {{.appname}} update --check
 `
 
 var updateCmd = &cobra.Command{
@@ -55,6 +61,19 @@ Examples:
 		if installCommit == "" {
 			installCommit = getCommitHash()
 		}
+
+		if checkVersion {
+			fmt.Printf("installed version: %s\n", Gray(Version))
+			fmt.Printf("   github version: %s\n", Gray(installCommit))
+			if Version != installCommit {
+				fmt.Printf("update available 🚩\n")
+				fmt.Printf("use %s\n", Gray(fmt.Sprintf("%s update", appname)))
+			} else {
+				fmt.Printf("newest version installed ✅\n")
+			}
+			syscall.Exit(0)
+		}
+
 		// fmt.Println("len(installCommit)", len(installCommit))
 		if len(installCommit) > 8 {
 			installCommit = installCommit[:8]
@@ -93,5 +112,6 @@ Examples:
 func init() {
 	rootCmd.AddCommand(updateCmd)
 	updateCmd.Flags().BoolVar(&cgoOff, "no-cgo", false, "don't use CGO (CGO_ENABLED=0) for go install command")
+	updateCmd.Flags().BoolVar(&checkVersion, "check", false, "check if there's a newer version available")
 	updateCmd.Flags().StringVar(&installCommit, "commit", "", "update to specific commit hash or branch. default: latest")
 }
