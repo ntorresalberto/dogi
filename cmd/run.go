@@ -189,6 +189,24 @@ func contRunning(name string) contState {
 	return constate
 }
 
+func cargoImage(name string) string {
+	out, err := exec.Command("docker",
+		"inspect", "-f", "{{ .Config.Env }}", name).Output()
+	check(err)
+	outstrs := strings.Split(strings.TrimFunc(strings.TrimSpace(string(out)),
+		func(a rune) bool { return a == '[' || a == ']' }), " ")
+	cargoHome := ""
+	for _, varStr := range outstrs {
+		varstrspl := strings.Split(varStr, "=")
+		envVar := varstrspl[0]
+		if envVar == "CARGO_HOME" {
+			cargoHome = varstrspl[1]
+			break
+		}
+	}
+	return cargoHome
+}
+
 var aptSupportedDistros = []string{"Ubuntu", "Debian"}
 
 func supportedDistros() []string {
@@ -671,6 +689,15 @@ Examples:
 				fmt.Sprintf("--volume=%s_cache_vol:%s/.cache",
 					appname, userObj.HomeDir))
 
+			cargoHomeContDir := cargoImage(imageName)
+			if cargoHomeContDir != "" {
+				logger.Printf("found CARGO_HOME:%s", cargoHomeContDir)
+				logger.Println("run cargo cache volume")
+				cargoCacheArg := fmt.Sprintf("--volume=%s_cargo-cache_vol:%s/registry",
+					appname, cargoHomeContDir)
+				logger.Printf("found CARGO_HOME:%s", cargoHomeContDir)
+				dockerRunArgs = append(dockerRunArgs, cargoCacheArg)
+			}
 			if !noUserPtr && userObj.Uid == "0" {
 				logger.Printf("⚡⚡ WARNING: super user detected, did you use sudo?\n")
 				logger.Printf("sudo dogi can only run with --no-user\n")
@@ -733,7 +760,7 @@ Examples:
 
 			logger.Println("docker command: ", strings.Join(merge(dockerArgs), " "))
 
-			out, err := exec.Command(dockerArgs[0], dockerArgs[1:]...).Output()
+			out, err := exec.Command(dockerArgs[0], dockerArgs[1:]...).CombinedOutput()
 			if err != nil {
 				fmt.Println(string(out))
 				syscall.Exit(1)
