@@ -115,6 +115,7 @@ var (
 	noUserPtr        bool
 	recentCtrPtr     bool
 	noRMPtr          bool
+	noUSBPtr         bool
 	noNethostPtr     bool
 	noCacherPtr      bool
 	workDirPtr       string
@@ -223,6 +224,30 @@ func dockerBinPath() (dockerBinPath string) {
 func merge(ss ...[]string) (s []string) {
 	for kss := range ss {
 		s = append(s, ss[kss]...)
+	}
+	return
+}
+
+func escapeSpaces(ss []string) (s []string) {
+	ss2 := make([]string, len(ss))
+	_ = copy(ss2, ss)
+	for ks := range ss2 {
+		spacespl := strings.Split(ss2[ks], " ")
+		if len(spacespl) > 1 {
+			eqspl := strings.Split(ss2[ks], "=")
+			if len(eqspl) != 2 {
+				panic(fmt.Sprintf("escapeSpaces: string should contain no more than a single '=':\n%v'", ss2[ks]))
+			}
+			ss2[ks] = fmt.Sprintf("%s='%s'", eqspl[0], eqspl[1])
+		}
+
+	}
+	return ss2
+}
+
+func mergeEscapeSpaces(ss ...[]string) (s []string) {
+	for kss := range ss {
+		s = append(s, escapeSpaces(ss[kss])...)
 	}
 	return
 }

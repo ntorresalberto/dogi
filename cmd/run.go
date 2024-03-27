@@ -698,6 +698,15 @@ Examples:
 				logger.Printf("found CARGO_HOME:%s", cargoHomeContDir)
 				dockerRunArgs = append(dockerRunArgs, cargoCacheArg)
 			}
+
+			if !noUSBPtr {
+				logger.Printf("mount usb devices with correct permissions")
+				dockerRunArgs = append(dockerRunArgs,
+					"--volume=/dev/bus/usb:/dev/bus/usb")
+				dockerRunArgs = append(dockerRunArgs,
+					"--device-cgroup-rule=c 189:* rmw")
+			}
+
 			if !noUserPtr && userObj.Uid == "0" {
 				logger.Printf("⚡⚡ WARNING: super user detected, did you use sudo?\n")
 				logger.Printf("sudo dogi can only run with --no-user\n")
@@ -758,7 +767,7 @@ Examples:
 				dockerRunArgs,
 				entrypoint)
 
-			logger.Println("docker command: ", strings.Join(merge(dockerArgs), " "))
+			logger.Println("docker command: ", strings.Join(mergeEscapeSpaces(dockerArgs), " "))
 
 			out, err := exec.Command(dockerArgs[0], dockerArgs[1:]...).CombinedOutput()
 			if err != nil {
@@ -800,5 +809,6 @@ func init() {
 	runCmd.Flags().BoolVar(&privilegedPtr, "privileged", false, "add --privileged to docker run command")
 	runCmd.Flags().BoolVar(&noCacherPtr, "no-cacher", false, "don't launch apt-cacher container")
 	runCmd.Flags().BoolVar(&noRMPtr, "no-rm", false, "don't launch with --rm (container will exist after exiting)")
+	runCmd.Flags().BoolVar(&noUSBPtr, "no-usb", false, "don't mount usb devices")
 	runCmd.Flags().BoolVar(&noNethostPtr, "no-nethost", false, "don't launch with --network=host")
 }
