@@ -24,8 +24,9 @@ if [ -n "${existing_user_by_name}" ]; then userdel -r "${existing_user_by_name}"
 useradd --no-log-init --no-create-home --uid "{{.uid}}" -s "/bin/bash" -c "{{.Name}}" -g "{{.ugid}}" -G "{{.gnames}}" -d "{{.homedir}}" "{{.username}}"
 
 echo "- create homedir: {{.homedir}}"
-echo "PS1=\"🐳 \${PS1}\"" >> "/etc/skel/.bashrc"
-echo "PS1=\"🐳 \${PS1}\"" >> "/root/.bashrc"
+echo "PS1=\"🐳 \${PS1}\"" >> "/etc/skel/.bashrc"  # for user
+echo "PS1=\"🐳 \${PS1}\"" >> "/root/.bashrc"      # for after sudo -s
+# echo "PS1=\"🐳 \${PS1}\"" >> "/etc/bash.bashrc" # TODO doesn't work?
 mkdir -pv "{{.homedir}}"
 mkhomedir_helper {{.username}}
 cp -nr /etc/skel/. "{{.homedir}}"
@@ -55,6 +56,7 @@ distro_debian=$(grep -i debian /etc/os-release)
 set -e
 distro_unknown=""
 sudo_ok=""
+installing_packages_msg="installing sudo, tzdata, vim, bash-completion..."
 if [ -n "${distro_ubuntu}" ] || [ -n "${distro_debian}" ]; then
     if [ -n "${distro_ubuntu}" ]; then
         echo -n "- Ubuntu distro, "
@@ -63,11 +65,13 @@ if [ -n "${distro_ubuntu}" ] || [ -n "${distro_debian}" ]; then
     fi
     echo "running apt update..."
     env DEBIAN_FRONTEND=noninteractive apt-get -qq update > /dev/null
-    echo "- installing sudo, tzdata, vim..."
-    env DEBIAN_FRONTEND=noninteractive apt-get -qq install sudo tzdata vim > /dev/null
+    echo "- installing apt-utils"
+    env DEBIAN_FRONTEND=noninteractive apt-get -qq install apt-utils > /dev/null 2>&1
+    echo "- ${installing_packages_msg}"
+    env DEBIAN_FRONTEND=noninteractive apt-get -qq install sudo tzdata vim bash-completion > /dev/null
 elif [ -n "${distro_fedora}" ]; then
-    echo "- Fedora distro, installing sudo, tzdata, vim..."
-    dnf install -y sudo tzdata vim > /dev/null
+    echo "- Fedora distro, ${installing_packages_msg}"
+    dnf install -y sudo tzdata vim bash-completion > /dev/null
 else
     distro_unknown="True"
 fi
