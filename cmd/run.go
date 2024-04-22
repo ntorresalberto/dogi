@@ -258,7 +258,7 @@ func setAptCacher() string {
 		logger.Printf("temp Dockerfile: %s\n", tmpfn)
 
 		cmd := exec.Command("docker",
-			"build", "-t", imgName, ".")
+			"build", "--progress=plain", "-t", imgName, ".")
 		cmd.Dir = dir
 		out, err := cmd.Output()
 		if err != nil {
@@ -763,11 +763,10 @@ Examples:
 
 			logger.Println("entrypoint:", entrypoint)
 
-			dockerArgs := merge([]string{dockerCmd, "create"},
-				dockerRunArgs,
-				entrypoint)
-
-			logger.Println("docker command: ", strings.Join(mergeEscapeSpaces(dockerArgs), " "))
+			dockerCreateArgs := merge([]string{dockerCmd, "create"},
+				dockerRunArgs)
+			logger.Println("docker command: ", strings.Join(merge(mergeEscapeSpaces(dockerCreateArgs), entrypoint), " "))
+			dockerArgs := merge(dockerCreateArgs, entrypoint)
 
 			out, err := exec.Command(dockerArgs[0], dockerArgs[1:]...).CombinedOutput()
 			if err != nil {
