@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+echo "- container image OS:"
+grep PRETTY_NAME /etc/os-release
+
 echo "- create groups if necessary..."
 
 {{.createGroups}}
@@ -10,16 +13,27 @@ echo "- create groups if necessary..."
 # echo "-------------------------------"
 
 echo "- creating user..."
-existing_user_by_uid=`getent passwd "1000" | cut -f1 -d: || true`
-if [ -n "${existing_user_by_uid}" ]; then userdel -r "${existing_user_by_uid}"; fi
+existing_user_by_uid=`getent passwd "{{.uid}}" | cut -f1 -d: || true`
+# echo "existing_user_by_uid ({{.uid}}): ${existing_user_by_uid}"
+if [ -n "${existing_user_by_uid}" ]; then
+    echo "WARNING: host uid ({{.uid}}) exists inside container (as ${existing_user_by_uid})," \
+        && echo "         deleting it to create host user and group ({{.username}})..." \
+        && userdel -rf "${existing_user_by_uid}"; fi
 
-existing_user_by_name=`getent passwd "{{.username}}" | cut -f1 -d: || true`
-existing_user_uid=`getent passwd "{{.username}}" | cut -f3 -d: || true`
-if [ -n "${existing_user_by_name}" ]; then find / -uid ${existing_user_uid} -exec chown -h {{.uid}} {} + || true ; find / -gid ${existing_user_uid} -exec chgrp -h {{.ugid}} {} + || true ; fi
-if [ -n "${existing_user_by_name}" ]; then userdel -r "${existing_user_by_name}"; fi
+# existing_user_by_name=`getent passwd "{{.username}}" | cut -f1 -d: || true`
+# existing_user_uid=`getent passwd "{{.username}}" | cut -f3 -d: || true`
+# echo "existing_user_by_name:${existing_user_by_name}"
+# echo "existing_user_uid:${existing_user_uid}"
+# if [ -n "${existing_user_by_name}" ]; then find / -uid ${existing_user_uid} -exec chown -h {{.uid}} {} + || true ; find / -gid ${existing_user_uid} -exec chgrp -h {{.ugid}} {} + || true ; fi
+# if [ -n "${existing_user_by_name}" ]; then userdel -rf "${existing_user_by_name}"; fi
 
-# existing_group_by_gid=`getent group "1000" | cut -f1 -d: || true`
-# if [ -z "${existing_group_by_gid}" ]; then groupadd -g "{{.ugid}}" "{{.username}}"; fi
+existing_group_by_gid=`getent group "{{.ugid}}" | cut -f1 -d: || true`
+# echo "existing_group_by_gid:${existing_group_by_gid}"
+if [ -z "${existing_group_by_gid}" ]; then
+    echo "group gid: host user gid ({{.ugid}}) not found inside container," \
+        && echo "           will create host user group ({{.username}}) inside container..." \
+        && groupadd -g "{{.ugid}}" "{{.username}}"; fi
+
 
 useradd --no-log-init --no-create-home --uid "{{.uid}}" -s "/bin/bash" -c "{{.Name}}" -g "{{.ugid}}" -G "{{.gnames}}" -d "{{.homedir}}" "{{.username}}"
 

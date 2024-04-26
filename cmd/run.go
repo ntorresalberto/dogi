@@ -357,8 +357,8 @@ group_exists=0
 echo "    . check gid {{.outside_gid}} is valid..."
 inside_gid_bygid=$(getent group "{{.outside_gid}}" | cut -f3 -d: || true)
 inside_gid_bygname=$(getent group "{{.outside_gname}}" | cut -f3 -d: || true)
-# echo "      inside_gid_bygid:${inside_gid_bygid}"
-# echo "      inside_gid_bygname:${inside_gid_bygname}"
+# echo "      inside_gid_bygid: ${inside_gid_bygid}"
+# echo "      inside_gid_bygname: ${inside_gid_bygname}"
 
 echo -n "     - gid (by gid): "
 herewarn=0
@@ -367,7 +367,7 @@ if [ "${inside_gid_bygid}" ]; then
   if [ "${inside_gid_bygid}" != "{{.outside_gid}}" ]; then
     echo "WARNING"
     echo "      -> gid (by gid): exists inside container exists and differs from outside:"
-    echo "      -> inside_gid_bygid:${inside_gid_bygid}, outside container: {{.outside_gid}}"
+    echo "      -> inside_gid_bygid: ${inside_gid_bygid}, outside container: {{.outside_gid}}"
     warnings=1
     herewarn=1
   fi
@@ -383,7 +383,7 @@ if [ "${inside_gid_bygname}" ]; then
   if [ "${inside_gid_bygname}" != "{{.outside_gid}}" ]; then
     echo "WARNING"
     echo "      -> gid (by gname) inside container exists and differs from outside:"
-    echo "      -> inside_gid_bygname:${inside_gid_bygname}, outside container: {{.outside_gid}}"
+    echo "      -> inside_gid_bygname: ${inside_gid_bygname}, outside container: {{.outside_gid}}"
     warnings=1
     herewarn=1
   fi
@@ -396,8 +396,8 @@ fi
 echo "    . check group name {{.outside_gname}} is valid..."
 inside_gname_bygid=$(getent group "{{.outside_gid}}" | cut -f1 -d: || true)
 inside_gname_bygname=$(getent group "{{.outside_gname}}" | cut -f1 -d: || true)
-# echo "      inside_gname_bygid:${inside_gname_bygid}"
-# echo "      inside_gname_bygname:${inside_gname_bygname}"
+# echo "      inside_gname_bygid: ${inside_gname_bygid}"
+# echo "      inside_gname_bygname: ${inside_gname_bygname}"
 
 echo -n "     - groupname (by gid): "
 herewarn=0
@@ -406,7 +406,7 @@ if [ "${inside_gname_bygid}" ]; then
   if [ "${inside_gname_bygid}" != "{{.outside_gname}}" ]; then
     echo "WARNING"
     echo "      -> groupname (by gid) exists inside container exists and differs from outside:"
-    echo "      -> inside_gname_bygid:${inside_gname_bygid}, outside container: {{.outside_gname}}"
+    echo "      -> inside_gname_bygid: ${inside_gname_bygid}, outside container: {{.outside_gname}}"
     warnings=1
     herewarn=1
   fi
@@ -422,7 +422,7 @@ if [ "${inside_gname_bygname}" ]; then
   if [ "${inside_gname_bygname}" != "{{.outside_gname}}" ]; then
     echo "WARNING"
     echo "      -> groupname (by gname) exists inside container exists and differs from outside:"
-    echo "      -> inside_gname_bygname:${inside_gname_bygname}, outside container: {{.outside_gname}}"
+    echo "      -> inside_gname_bygname: ${inside_gname_bygname}, outside container: {{.outside_gname}}"
     warnings=1
     herewarn=1
   fi
@@ -444,7 +444,8 @@ else
   echo "    ---------------------------------"
   echo "    Warning: there were some issues with group {{.outside_gname}} ({{.outside_gid}}),"
   echo "    check log above but very often this does not pose a problem"
-  echo "    (if it does create an issue with the running log output above)."
+  echo "    (if it does create an issue with the running log output)."
+  echo "    https://github.com/ntorresalberto/dogi/issues"
   echo "    ---------------------------------"
   # exit 1
 fi
