@@ -18,6 +18,7 @@ Even though **dogi** was originally inspired by [rocker](https://github.com/osrf
 
 ```bash
 # install binary
+mkdir -pv ~/go/bin
 wget -qO- https://github.com/ntorresalberto/dogi/releases/download/rolling/dogi-rolling-linux-amd64.tar.gz | tar xvz -C ~/go/bin
 
 # add bash autocompletion
