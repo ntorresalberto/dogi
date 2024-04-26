@@ -1,5 +1,6 @@
 GIT_COMMIT := $(shell git describe --always --dirty)
 GOPATH=$(shell go env GOPATH)/bin
+RELEASE_TAG=rolling
 
 all: build lint count
 
@@ -9,6 +10,10 @@ build: format
 
 release:
 	@echo '- release'
+	@git tag -d ${RELEASE_TAG}
+	@git push origin :refs/tags/${RELEASE_TAG}
+	@git tag -f ${RELEASE_TAG}
+	@git push origin rolling
 	@env CGO_ENABLED=0 go build -ldflags="-X github.com/ntorresalberto/dogi/cmd.Version=$(GIT_COMMIT)"
 
 install: format
