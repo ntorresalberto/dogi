@@ -40,6 +40,8 @@ useradd --no-log-init --no-create-home --uid "{{.uid}}" -s "/bin/bash" -c "{{.Na
 echo "- create homedir: {{.homedir}}"
 echo "PS1=\"🐳 \${PS1}\"" >> "/etc/skel/.bashrc"  # for user
 echo "PS1=\"🐳 \${PS1}\"" >> "/root/.bashrc"      # for after sudo -s
+echo 'PATH="{{.homedir}}/.local/bin:{{.homedir}}/bin:$PATH"' >> "/etc/skel/.bashrc"
+
 # echo "PS1=\"🐳 \${PS1}\"" >> "/etc/bash.bashrc" # TODO doesn't work?
 mkdir -pv "{{.homedir}}"
 mkhomedir_helper {{.username}}
