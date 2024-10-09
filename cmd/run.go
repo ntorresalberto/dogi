@@ -221,7 +221,8 @@ func imageExists(imageName string) bool {
 
 func imageDistro(imageName string) string {
 	out, err := exec.Command("docker", "run", "--rm", "--tty",
-		imageName, "cat", "/etc/os-release").Output()
+		"--entrypoint=cat",
+		imageName, "/etc/os-release").Output()
 	check(err)
 
 	for _, val := range supportedDistros() {
@@ -577,6 +578,8 @@ Examples:
 				fmt.Sprintf("--workdir=%s", workDirPtr),
 				"--volume=/tmp/.X11-unix:/tmp/.X11-unix",
 				"--env=XAUTHORITY=/.xauth",
+				// "--entrypoint=bash",
+				"--user=0",
 				// either none or both together
 				// ref: https://stackoverflow.com/a/35040140
 				// NOTE: QT_X11_NO_MITSHM – stops Qt form using the MIT-SHM X11 extension.
