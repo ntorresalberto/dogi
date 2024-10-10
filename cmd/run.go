@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -249,12 +248,12 @@ func setAptCacher() string {
 	{
 		logger.Printf("build apt cacher image: %s\n", imgName)
 		// build apt-cache-ng image
-		dir, err := ioutil.TempDir("", "dogi_apt-cache")
+		dir, err := os.MkdirTemp("", "dogi_apt-cache")
 		check(err)
 		defer os.RemoveAll(dir) // clean up
 
 		tmpfn := filepath.Join(dir, "Dockerfile")
-		check(ioutil.WriteFile(tmpfn, []byte(assets.AptCacheDockerfile), 0666))
+		check(os.WriteFile(tmpfn, []byte(assets.AptCacheDockerfile), 0666))
 		logger.Printf("temp dir: %s\n", dir)
 		logger.Printf("temp Dockerfile: %s\n", tmpfn)
 
@@ -341,7 +340,7 @@ func setAptCacher() string {
 	aptCacherFile, err := os.CreateTemp("", fmt.Sprintf(".%s_%s_*", appname, baseName))
 	check(err)
 	logger.Printf("apt-cacher file: %s", aptCacherFile.Name())
-	check(ioutil.WriteFile(aptCacherFile.Name(), []byte(aptCacherConf), 0666))
+	check(os.WriteFile(aptCacherFile.Name(), []byte(aptCacherConf), 0666))
 	return aptCacherFile.Name()
 }
 
