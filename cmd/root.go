@@ -122,6 +122,7 @@ var (
 	contNamePtr      string
 	othPtr           string
 	devAccPtr        string
+	devRMWPtr        string
 	logger           = log.New(os.Stdout, appname+": ", log.Lmsgprefix)
 	dockerRunArgs    = []string{
 		"--interactive",
