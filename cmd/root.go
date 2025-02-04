@@ -120,6 +120,8 @@ var (
 	noCacherPtr      bool
 	workDirPtr       string
 	contNamePtr      string
+	othPtr           string
+	devAccPtr        string
 	logger           = log.New(os.Stdout, appname+": ", log.Lmsgprefix)
 	dockerRunArgs    = []string{
 		"--interactive",

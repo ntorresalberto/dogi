@@ -708,6 +708,16 @@ Examples:
 					"--volume=/dev/bus/usb:/dev/bus/usb")
 				dockerRunArgs = append(dockerRunArgs,
 					"--device-cgroup-rule=c 189:* rmw")
+
+				// add commands to include specific usb devices (as stated by https://stackoverflow.com/a/62758958)
+				if devAccPtr != "" {
+					var indexes = strings.Split(devAccPtr, ";")
+					for i := 0; i < len(indexes); i++ {
+						var s = "--device-cgroup-rule=c " + indexes[i] + ":* rmw"
+						dockerRunArgs = append(dockerRunArgs, s)
+					}
+				}
+
 			}
 
 			if !noUserPtr && userObj.Uid == "0" {
@@ -757,6 +767,11 @@ Examples:
 					fmt.Sprintf("--volume=%s:%s", createUserFile.Name(),
 						createUserScriptPath))
 				entrypoint = merge([]string{"bash", createUserScriptPath}, execCommand)
+			}
+
+			if othPtr != "" {
+				// add final custom commands.
+				dockerRunArgs = append(dockerRunArgs, othPtr)
 			}
 
 			dockerRunArgs = append(dockerRunArgs, imageName)
@@ -813,4 +828,7 @@ func init() {
 	runCmd.Flags().BoolVar(&noRMPtr, "no-rm", false, "don't launch with --rm (container will exist after exiting)")
 	runCmd.Flags().BoolVar(&noUSBPtr, "no-usb", false, "don't mount usb devices")
 	runCmd.Flags().BoolVar(&noNethostPtr, "no-nethost", false, "don't launch with --network=host")
+	runCmd.Flags().StringVar(&othPtr, "other", "", "add the following string to 'run' command.")
+	runCmd.Flags().StringVar(&devAccPtr, "device-access", "", "add access to the following devices (as stated in https://stackoverflow.com/a/62758958). Format : <id_a>;<id_b>;")
+
 }
