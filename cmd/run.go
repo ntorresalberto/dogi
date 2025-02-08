@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"text/template"
@@ -241,7 +242,7 @@ func aptCacherSupported(distro string) bool {
 	return false
 }
 
-func setAptCacher() string {
+func setAptCacher(imageName string) string {
 	baseName := "apt-cacher"
 	imgName := fmt.Sprintf("%s/%s", appname, baseName)
 
@@ -253,6 +254,29 @@ func setAptCacher() string {
 		defer os.RemoveAll(dir) // clean up
 
 		tmpfn := filepath.Join(dir, "Dockerfile")
+		var version = "ubuntu:22.04"
+		var changeAptDistro = false
+
+		if changeAptDistro {
+			// create apt-cacher image with the same distro
+			// as the docker image created
+			// (it might be the cause of some bugs, so let it as an option
+			// for now)
+			// get distro of the image
+			outN, errN := exec.Command("docker", "run", "--rm", "--tty",
+				"--entrypoint=cat",
+				imageName, "/etc/issue").Output()
+			check(errN)
+			var distroInfo = strings.Split(string(outN), "\n")[0]
+			logger.Println(distroInfo)
+			if strings.Contains(distroInfo, "Ubuntu") {
+				var number = strings.Split(string(outN), " ")[1]
+				version = "ubuntu:" + number[:5]
+				logger.Println(version)
+			}
+		}
+
+		assets.AptCacheDockerfile = "FROM " + version + "\n" + assets.AptCacheDockerfile
 		check(os.WriteFile(tmpfn, []byte(assets.AptCacheDockerfile), 0666))
 		logger.Printf("temp dir: %s\n", dir)
 		logger.Printf("temp Dockerfile: %s\n", tmpfn)
@@ -651,7 +675,7 @@ Examples:
 			if aptCacherSupported(distro) {
 				if !noCacherPtr {
 					logger.Println("using apt-cacher, disable it with --no-cacher")
-					file := setAptCacher()
+					file := setAptCacher(imageName)
 					addCopyToContainerFile(file, "/etc/apt/apt.conf.d/01proxy")
 				} else {
 					logger.Println("disabling apt-cacher (--no-cacher=ON)")
@@ -763,6 +787,7 @@ Examples:
 				check(err)
 				logger.Println("create user script:", createUserFile.Name())
 				{
+					//logger.Println("setupsudo : ", strconv.FormatBool(setupSudoPtr))
 					groupsCmd := userSingleton().createGroupsCmd()
 					err := template.Must(template.New("").Option("missingkey=error").Parse(assets.CreateUserTemplate)).Execute(createUserFile,
 						map[string]string{"username": userObj.Username,
@@ -772,6 +797,7 @@ Examples:
 							"gnames":       groupsCmd.gnames,
 							"Name":         userObj.Name,
 							"createGroups": groupsCmd.cmd,
+							"setupSudo":    strconv.FormatBool(setupSudoPtr),
 						})
 					check(err)
 				}
@@ -844,5 +870,6 @@ func init() {
 	runCmd.Flags().StringVar(&othPtr, "other", "", "add the following string to 'run' command.")
 	runCmd.Flags().StringVar(&devRMWPtr, "device-rmw", "", "add rmw rules to the following devices (as stated in https://stackoverflow.com/a/62758958). Format : <id_dev_a>;<id_dev_b>")
 	runCmd.Flags().StringVar(&devAccPtr, "device-access", "", "mount the following devices to container (through --device option). Format : <dev_name_a>;<dev_name_b>")
+	runCmd.Flags().BoolVar(&setupSudoPtr, "setup-sudo", true, "install inside containers various basic packages, such as apt-utils, sudo, tzdata, vim, or bash-completion.")
 
 }
