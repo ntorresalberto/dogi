@@ -223,7 +223,14 @@ func imageDistro(imageName string) string {
 	out, err := exec.Command("docker", "run", "--rm", "--tty",
 		"--entrypoint=cat",
 		imageName, "/etc/os-release").Output()
-	check(err)
+	// Debug for barebone images, where image distro could not
+	// even be checked
+	if err != nil {
+		logger.Printf("Error : could not check image distro. Recorded error : ")
+		logger.Println(err.Error())
+		logger.Fatalf("We'll assume the image is too basic for dogi. Exiting...")
+	}
+	//check(err)
 
 	for _, val := range supportedDistros() {
 		if strings.Contains(string(out), val) {

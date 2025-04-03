@@ -14,6 +14,18 @@ It allows using rootless containers, running GUIs, quickly mounting your current
 
 Even though **dogi** was originally inspired by [rocker](https://github.com/osrf/rocker) and solves a similar problem (or the same), it aims to do so with minimum user effort. Additionally, it provides the ability to interact with the `docker` client directly ([transparent](#design-principles)).
 
+## !!! WARNING !!!
+
+* Dogi's processes assume that Docker is able to build an image in the /tmp folder. This is typically verified if Docker is installed via the procedure described on the following pages: https://docs.docker.com/engine/install/ubuntu/ ; https://docs.docker.com/engine/install/linux-postinstall/ . This is typically not checked if Docker is installed via snap. 
+
+* For now, Dogi only works for images based on these distros: Ubuntu, Debian, Fedora. Dogi also won't work for images that are too simplistic (typically, the “hello-world” Docker image).
+
+* In order to use Docker (and thus, Dogi) with GPU support, you need to follow the installation prerequisites instructions (https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#prerequisites), and the subsequents configuration instructions (https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration). Otherwise, the following bug will appears : 
+
+```
+Bug : Error response from daemon: unknown or invalid runtime name: nvidia
+```
+
 ## Quickstart
 
 ```bash
