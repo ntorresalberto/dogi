@@ -256,7 +256,8 @@ func setAptCacher(imageName string) string {
 	{
 		logger.Printf("build apt cacher image: %s\n", imgName)
 		// build apt-cache-ng image
-		dir, err := os.MkdirTemp("", "dogi_apt-cache")
+		//dir, err := os.MkdirTemp("", "dogi_apt-cache")
+		dir, err := os.MkdirTemp(tempDirPtr, "dogi_apt-cache")
 		check(err)
 		defer os.RemoveAll(dir) // clean up
 
@@ -368,7 +369,7 @@ func setAptCacher(imageName string) string {
 
 	aptCacherConf := fmt.Sprintf("Acquire::http { Proxy \"http://%s:3142\"; };", ip)
 
-	aptCacherFile, err := os.CreateTemp("", fmt.Sprintf(".%s_%s_*", appname, baseName))
+	aptCacherFile, err := os.CreateTemp(tempDirPtr, fmt.Sprintf(".%s_%s_*", appname, baseName))
 	check(err)
 	logger.Printf("apt-cacher file: %s", aptCacherFile.Name())
 	check(os.WriteFile(aptCacherFile.Name(), []byte(aptCacherConf), 0666))
@@ -566,7 +567,9 @@ Examples:
 			check(err)
 
 			// create xauth magic cookie file
-			xauthfile, err := os.CreateTemp("", fmt.Sprintf(".%s*.xauth", appname))
+			//xauthfile, err := os.CreateTemp("", fmt.Sprintf(".%s*.xauth", appname))
+			xauthfile, err := os.CreateTemp(tempDirPtr, fmt.Sprintf(".%s*.xauth", appname))
+
 			check(err)
 			logger.Println("temp xauth file:", xauthfile.Name())
 			addCopyToContainerFile(xauthfile.Name(), "/.xauth")
@@ -595,7 +598,8 @@ Examples:
 			logger.Printf("workdir: %s\n", workDirPtr)
 			mountStrs := []string{fmt.Sprintf("--volume=%s:%s", workDirPtr, workDirPtr)}
 
-			cidFile := fmt.Sprintf("%s/.%s%v.cid", os.TempDir(), appname, rand.Int63())
+			//cidFile := fmt.Sprintf("%s/.%s%v.cid", os.TempDir(), appname, rand.Int63())
+			cidFile := fmt.Sprintf("%s/.%s%v.cid", tempDirPtr, appname, rand.Int63())
 			mountStrs = append(mountStrs, fmt.Sprintf("--cidfile=%s", cidFile))
 			mountStrs = append(mountStrs, fmt.Sprintf("--volume=%s:%s", cidFile, cidFileContainer))
 
@@ -789,7 +793,9 @@ Examples:
 
 				// TODO: createUser file won't be removed because
 				// process is replaced at Exec, is there a way?
-				createUserFile, err := os.CreateTemp("",
+				// createUserFile, err := os.CreateTemp("",
+				// 	fmt.Sprintf(".%s*.sh", appname))
+				createUserFile, err := os.CreateTemp(tempDirPtr,
 					fmt.Sprintf(".%s*.sh", appname))
 				check(err)
 				logger.Println("create user script:", createUserFile.Name())
@@ -878,5 +884,5 @@ func init() {
 	runCmd.Flags().StringVar(&devRMWPtr, "device-rmw", "", "add rmw rules to the following devices (as stated in https://stackoverflow.com/a/62758958). Format : <id_dev_a>;<id_dev_b>")
 	runCmd.Flags().StringVar(&devAccPtr, "device-access", "", "mount the following devices to container (through --device option). Format : <dev_name_a>;<dev_name_b>")
 	runCmd.Flags().BoolVar(&setupSudoPtr, "setup-sudo", true, "install inside containers various basic packages, such as apt-utils, sudo, tzdata, vim, or bash-completion.")
-
+	runCmd.Flags().StringVar(&tempDirPtr, "temp-dir", "", "temporary directory to use for dogi (default: $TMPDIR or /tmp, through empty command). Can be modified if there are access issues with this particular folder.")
 }
