@@ -262,29 +262,6 @@ func setAptCacher(imageName string) string {
 		defer os.RemoveAll(dir) // clean up
 
 		tmpfn := filepath.Join(dir, "Dockerfile")
-		var version = "ubuntu:22.04"
-		var changeAptDistro = false
-
-		if changeAptDistro {
-			// create apt-cacher image with the same distro
-			// as the docker image created
-			// (it might be the cause of some bugs, so let it as an option
-			// for now)
-			// get distro of the image
-			outN, errN := exec.Command("docker", "run", "--rm", "--tty",
-				"--entrypoint=cat",
-				imageName, "/etc/issue").Output()
-			check(errN)
-			var distroInfo = strings.Split(string(outN), "\n")[0]
-			logger.Println(distroInfo)
-			if strings.Contains(distroInfo, "Ubuntu") {
-				var number = strings.Split(string(outN), " ")[1]
-				version = "ubuntu:" + number[:5]
-				logger.Println(version)
-			}
-		}
-
-		assets.AptCacheDockerfile = "FROM " + version + "\n" + assets.AptCacheDockerfile
 		check(os.WriteFile(tmpfn, []byte(assets.AptCacheDockerfile), 0666))
 		logger.Printf("temp dir: %s\n", dir)
 		logger.Printf("temp Dockerfile: %s\n", tmpfn)
