@@ -249,7 +249,7 @@ func aptCacherSupported(distro string) bool {
 	return false
 }
 
-func setAptCacher(imageName string) string {
+func setAptCacher() string {
 	baseName := "apt-cacher"
 	imgName := fmt.Sprintf("%s/%s", appname, baseName)
 
@@ -663,7 +663,7 @@ Examples:
 			if aptCacherSupported(distro) {
 				if !noCacherPtr {
 					logger.Println("using apt-cacher, disable it with --no-cacher")
-					file := setAptCacher(imageName)
+					file := setAptCacher()
 					addCopyToContainerFile(file, "/etc/apt/apt.conf.d/01proxy")
 				} else {
 					logger.Println("disabling apt-cacher (--no-cacher=ON)")
@@ -777,7 +777,6 @@ Examples:
 				check(err)
 				logger.Println("create user script:", createUserFile.Name())
 				{
-					//logger.Println("setupsudo : ", strconv.FormatBool(setupSudoPtr))
 					groupsCmd := userSingleton().createGroupsCmd()
 					err := template.Must(template.New("").Option("missingkey=error").Parse(assets.CreateUserTemplate)).Execute(createUserFile,
 						map[string]string{"username": userObj.Username,
