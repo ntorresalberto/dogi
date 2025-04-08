@@ -814,10 +814,6 @@ Examples:
 
 			dockerCreateArgs := merge([]string{dockerCmd, "create"},
 				dockerRunArgs)
-			logger.Println("Docker tempDir : ", tempDirPtr)
-			if tempDirPtr == "" {
-				logger.Println("Is recognized as empty")
-			}
 			logger.Println("docker command: ", strings.Join(merge(mergeEscapeSpaces(dockerCreateArgs), entrypoint), " "))
 			dockerArgs := merge(dockerCreateArgs, entrypoint)
 
