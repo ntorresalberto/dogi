@@ -576,6 +576,9 @@ Examples:
 			mountStrs := []string{fmt.Sprintf("--volume=%s:%s", workDirPtr, workDirPtr)}
 
 			//cidFile := fmt.Sprintf("%s/.%s%v.cid", os.TempDir(), appname, rand.Int63())
+			if tempDirPtr == "" {
+				tempDirPtr = os.TempDir()
+			}
 			cidFile := fmt.Sprintf("%s/.%s%v.cid", tempDirPtr, appname, rand.Int63())
 			mountStrs = append(mountStrs, fmt.Sprintf("--cidfile=%s", cidFile))
 			mountStrs = append(mountStrs, fmt.Sprintf("--volume=%s:%s", cidFile, cidFileContainer))
@@ -811,6 +814,10 @@ Examples:
 
 			dockerCreateArgs := merge([]string{dockerCmd, "create"},
 				dockerRunArgs)
+			logger.Println("Docker tempDir : ", tempDirPtr)
+			if tempDirPtr == "" {
+				logger.Println("Is recognized as empty")
+			}
 			logger.Println("docker command: ", strings.Join(merge(mergeEscapeSpaces(dockerCreateArgs), entrypoint), " "))
 			dockerArgs := merge(dockerCreateArgs, entrypoint)
 
