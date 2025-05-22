@@ -802,7 +802,10 @@ Examples:
 
 			if othPtr != "" {
 				// add final custom commands.
-				dockerRunArgs = append(dockerRunArgs, othPtr)
+				outStr := strings.Split(othPtr, " ")
+				for _, elmt := range outStr {
+					dockerRunArgs = append(dockerRunArgs, elmt)
+				}
 			}
 
 			dockerRunArgs = append(dockerRunArgs, imageName)
