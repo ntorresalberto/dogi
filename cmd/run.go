@@ -786,6 +786,12 @@ Examples:
 				check(err)
 				logger.Println("create user script:", createUserFile.Name())
 				{
+					//logger.Println(strconv.FormatBool(setupSudoPtr))
+					var setupSudo bool = true
+					if noSetupSudoPtr {
+						setupSudo = false
+					}
+
 					groupsCmd := userSingleton().createGroupsCmd()
 					err := template.Must(template.New("").Option("missingkey=error").Parse(assets.CreateUserTemplate)).Execute(createUserFile,
 						map[string]string{"username": userObj.Username,
@@ -795,7 +801,7 @@ Examples:
 							"gnames":       groupsCmd.gnames,
 							"Name":         userObj.Name,
 							"createGroups": groupsCmd.cmd,
-							"setupSudo":    strconv.FormatBool(setupSudoPtr),
+							"setupSudo":    strconv.FormatBool(setupSudo),
 						})
 					check(err)
 				}
@@ -871,7 +877,7 @@ func init() {
 	runCmd.Flags().StringVar(&othPtr, "other", "", "add the following string to 'run' command.")
 	runCmd.Flags().StringVar(&devRMWPtr, "device-rmw", "", "add rmw rules to the following devices (as stated in https://stackoverflow.com/a/62758958). Format : <id_dev_a>;<id_dev_b>")
 	runCmd.Flags().StringVar(&devAccPtr, "device-access", "", "mount the following devices to container (through --device option). Format : <dev_name_a>;<dev_name_b>")
-	runCmd.Flags().BoolVar(&setupSudoPtr, "setup-sudo", true, "install inside containers various basic packages, such as apt-utils, sudo, tzdata, vim, or bash-completion.")
+	runCmd.Flags().BoolVar(&noSetupSudoPtr, "no-setup-sudo", false, "install inside containers various basic packages, such as apt-utils, sudo, tzdata, vim, or bash-completion.")
 	runCmd.Flags().StringVar(&tempDirPtr, "temp-dir", "", "temporary directory to use for dogi (default: $TMPDIR or /tmp, through empty command). Can be modified if there are access issues with this particular folder.")
 	runCmd.Flags().BoolVar(&pidIPCHostPtr, "pidipc-host", true, "add --pid=host (PID of the container) and --ipc=host (Memory Access) to docker run command. Automatically activated with --network=host. Although it removes a security layer, it is notably necessary to let ROS containers communicates between them in --network=host mode.")
 

@@ -118,7 +118,7 @@ var (
 	noUSBPtr         bool
 	noNethostPtr     bool
 	noCacherPtr      bool
-	setupSudoPtr     bool
+	noSetupSudoPtr   bool
 	pidIPCHostPtr    bool
 	workDirPtr       string
 	contNamePtr      string
