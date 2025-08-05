@@ -118,8 +118,14 @@ var (
 	noUSBPtr         bool
 	noNethostPtr     bool
 	noCacherPtr      bool
+	noSetupSudoPtr   bool
+	pidIPCHostPtr    bool
 	workDirPtr       string
 	contNamePtr      string
+	othPtr           string
+	devAccPtr        string
+	devRMWPtr        string
+	tempDirPtr       string
 	logger           = log.New(os.Stdout, appname+": ", log.Lmsgprefix)
 	dockerRunArgs    = []string{
 		"--interactive",
