@@ -637,9 +637,9 @@ Examples:
 			if !noNethostPtr {
 				logger.Println("adding --network=host")
 				dockerRunArgs = append(dockerRunArgs, "--network=host")
-				if pidIPCHostPtr {
-					// https://github.com/eProsima/Fast-DDS/issues/2956
-					logger.Println("adding --pid=host and --ipc=host")
+				if noPIDIPCHostPtr {
+					// useful for https://github.com/eProsima/Fast-DDS/issues/2956
+					logger.Println("add --pid=host --ipc=host, to disable use --no-pid-ipc-host")
 					dockerRunArgs = append(dockerRunArgs, "--pid=host")
 					dockerRunArgs = append(dockerRunArgs, "--ipc=host")
 				}
@@ -879,6 +879,6 @@ func init() {
 	runCmd.Flags().StringVar(&devAccPtr, "device-access", "", "mount the following devices to container (through --device option). Format : <dev_name_a>;<dev_name_b>")
 	runCmd.Flags().BoolVar(&noSetupSudoPtr, "no-setup-sudo", false, "install inside containers various basic packages, such as apt-utils, sudo, tzdata, vim, or bash-completion.")
 	runCmd.Flags().StringVar(&tempDirPtr, "temp-dir", "", "temporary directory to use for dogi (default: $TMPDIR or /tmp, through empty command). Can be modified if there are access issues with this particular folder.")
-	runCmd.Flags().BoolVar(&pidIPCHostPtr, "pidipc-host", true, "add --pid=host (PID of the container) and --ipc=host (Memory Access) to docker run command. Automatically activated with --network=host. Although it removes a security layer, it is notably necessary to let ROS containers communicates between them in --network=host mode.")
+	runCmd.Flags().BoolVar(&noPIDIPCHostPtr, "no-pid-ipc-host", true, "don't launch with --pid=host --ipc=host.")
 
 }

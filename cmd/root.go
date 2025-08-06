@@ -119,7 +119,7 @@ var (
 	noNethostPtr     bool
 	noCacherPtr      bool
 	noSetupSudoPtr   bool
-	pidIPCHostPtr    bool
+	noPIDIPCHostPtr  bool
 	workDirPtr       string
 	contNamePtr      string
 	othPtr           string
