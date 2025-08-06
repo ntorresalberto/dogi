@@ -15,13 +15,14 @@ FROM ubuntu:22.04
 
 VOLUME ["/var/cache/apt-cacher-ng"]
 
-## Added : Try to clean everything (for bug : apt-get BADSIG GPG)
-RUN apt-get clean && \
-    cd /var/lib/apt &&\
-    mv lists lists.old &&\
-    mkdir -p lists/partial && \
-    apt-get clean &&\
-    apt-get update -qq -y
+# TODO left commented until we can confirm this is a workaround
+# ## Added : Try to clean everything (for bug : apt-get BADSIG GPG)
+# RUN apt-get clean && \
+#     cd /var/lib/apt &&\
+#     mv lists lists.old &&\
+#     mkdir -p lists/partial && \
+#     apt-get clean &&\
+#     apt-get update -qq -y
 
 RUN    apt-get update && apt-get install -y apt-cacher-ng \
     && sed -i 's/\# PassThroughPattern: \.\*/PassThroughPattern: \.\*/g' /etc/apt-cacher-ng/acng.conf
