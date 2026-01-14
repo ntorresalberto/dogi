@@ -28,10 +28,21 @@ Bug : Error response from daemon: unknown or invalid runtime name: nvidia
 
 ## Quickstart
 
+First, do : 
+
+```
+## To install this fork
+export DOGI_INSTALL_GITHUB="XV25"
+## To install the original repo
+export DOGI_INSTALL_GITHUB="ntorresalberto"
+```
+
+Then :
+
 ```bash
 # install binary
 mkdir -pv ~/go/bin
-wget -qO- https://github.com/ntorresalberto/dogi/releases/download/rolling/dogi-rolling-linux-amd64.tar.gz | tar xvz -C ~/go/bin
+wget -qO- https://github.com/$DOGI_INSTALL_GITHUB/dogi/releases/download/rolling/dogi-rolling-linux-amd64.tar.gz | tar xvz -C ~/go/bin
 
 # add bash autocompletion
 echo 'source <(dogi completion bash)' >> ~/.bashrc
@@ -104,6 +115,13 @@ Some [optional setup steps](#optional-setup-steps) might be required.
     dogi run ubuntu --no-user -- bash -c "apt install -y mesa-utils && glxgears" # as root
 ```
 
+- Add access to a webcam (ex : /dev/video0) (after having given access, for example, through ```  sudo usermod -aG video $USER```) : 
+
+```bash
+	dogi run ubuntu --device-access "/dev/video0"
+```
+
+
 - Delete unused and/or dangling containers, images and volumes
 
 ```bash
@@ -145,8 +163,19 @@ You should find **dogi** useful if you:
 
 ### Installing from source
 
+First, do : 
+
+```
+## To install this fork
+export DOGI_INSTALL_GITHUB="XV25"
+## To install the original repo
+export DOGI_INSTALL_GITHUB="ntorresalberto"
+```
+
+Then :
+
 ```bash
-git clone https://github.com/ntorresalberto/dogi.git
+git clone https://github.com/$DOGI_INSTALL_GITHUB/dogi.git
 cd dogi
 make install
 dogi -v         # test it!
