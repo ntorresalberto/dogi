@@ -806,12 +806,6 @@ Examples:
 				entrypoint = merge([]string{"bash", createUserScriptPath}, execCommand)
 			}
 
-			if othPtr != "" {
-				// add final custom commands.
-				outStr := strings.Split(othPtr, " ")
-				dockerRunArgs = append(dockerRunArgs, outStr...)
-			}
-
 			dockerRunArgs = append(dockerRunArgs, imageName)
 			// run command end
 			// ********************************************************
@@ -866,7 +860,6 @@ func init() {
 	runCmd.Flags().BoolVar(&noRMPtr, "no-rm", false, "don't launch with --rm (container will exist after exiting)")
 	runCmd.Flags().BoolVar(&noUSBPtr, "no-usb", false, "don't mount usb devices")
 	runCmd.Flags().BoolVar(&noNethostPtr, "no-nethost", false, "don't launch with --network=host")
-	runCmd.Flags().StringVar(&othPtr, "other", "", "add the following string to 'run' command.")
 	runCmd.Flags().StringVar(&devRMWPtr, "device-rmw", "", "add rmw rules to the following devices (as stated in https://stackoverflow.com/a/62758958). Format : <id_dev_a>;<id_dev_b>")
 	runCmd.Flags().StringVar(&devAccPtr, "device-access", "", "mount the following devices to container (through --device option). Format : <dev_name_a>;<dev_name_b>")
 	runCmd.Flags().StringVar(&tempDirPtr, "temp-dir", "", "temporary directory to use for dogi (default: $TMPDIR or /tmp, through empty command). Can be modified if there are access issues with this particular folder.")

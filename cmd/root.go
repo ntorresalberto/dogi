@@ -121,7 +121,6 @@ var (
 	noPIDIPCHostPtr  bool
 	workDirPtr       string
 	contNamePtr      string
-	othPtr           string
 	devAccPtr        string
 	devRMWPtr        string
 	tempDirPtr       string
