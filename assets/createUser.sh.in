@@ -74,21 +74,17 @@ distro_unknown=""
 sudo_ok=""
 installing_packages_msg="installing sudo, tzdata, vim, bash-completion..."
 if [ -n "${distro_ubuntu}" ] || [ -n "${distro_debian}" ]; then
-    if [ "{{.setupSudo}}" == true ]; then
-        if [ -n "${distro_ubuntu}" ]; then
-            echo -n "- Ubuntu distro, "
-        else
-            echo -n "- Debian distro, "
-        fi
-        echo "running apt update..."
-        env DEBIAN_FRONTEND=noninteractive apt-get -qq update > /dev/null
-        echo "- installing apt-utils"
-        env DEBIAN_FRONTEND=noninteractive apt-get -qq install apt-utils > /dev/null 2>&1
-        echo "- ${installing_packages_msg}"
-        env DEBIAN_FRONTEND=noninteractive apt-get -qq install sudo tzdata vim bash-completion > /dev/null
+    if [ -n "${distro_ubuntu}" ]; then
+        echo -n "- Ubuntu distro, "
     else
-        sudo_ok=false
+        echo -n "- Debian distro, "
     fi
+    echo "running apt update..."
+    env DEBIAN_FRONTEND=noninteractive apt-get -qq update > /dev/null
+    echo "- installing apt-utils"
+    env DEBIAN_FRONTEND=noninteractive apt-get -qq install apt-utils > /dev/null 2>&1
+    echo "- ${installing_packages_msg}"
+    env DEBIAN_FRONTEND=noninteractive apt-get -qq install sudo tzdata vim bash-completion > /dev/null
 elif [ -n "${distro_fedora}" ]; then
     echo "- Fedora distro, ${installing_packages_msg}"
     dnf install -y sudo tzdata vim bash-completion > /dev/null
@@ -99,34 +95,31 @@ fi
 if [ -n "${distro_unknown}" ]; then
     echo "- UNKNOWN distro."
     echo "failed to install packages sudo tzdata."
-    sudo_ok=false
-fi
-
-if [ "${sudo_ok}" != false ]; then
+else
     echo "{{.username}} ALL=NOPASSWD: ALL" >> /etc/sudoers.d/dogi
     sed -i '/secure_path/ s/^/#/' /etc/sudoers
-    sudo_ok=true
+    sudo_ok="True"
 fi
 ###############################################################
 
 echo "- done, happy 🐳!"
 echo "- you now are INSIDE the container"
-echo "${sudo_ok}"
+
 if [ $# -eq 0 ]; then
-    if [ "${sudo_ok}" = true ]; then
+    if [ -n "${sudo_ok}" ]; then
         echo "- switch to user {{.username}}"
         sudo -EHu {{.username}} bash
     else
-        echo "- sudo not setup for switch, will run as root"
+        echo "- sudo not setup, will run as root"
         bash
     fi
 fi
 
-if [ "${sudo_ok}" = true ]; then
+if [ -n "${sudo_ok}" ]; then
     echo "- run as user: $@"
     sudo -EHu {{.username}} "$@"
 else
-    echo "- sudo not setup in run, will run as root"
+    echo "- sudo not setup, will run as root"
     $@
 fi
 

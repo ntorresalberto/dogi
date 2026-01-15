@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 	"text/template"
@@ -259,8 +258,6 @@ func setAptCacher() string {
 		//dir, err := os.MkdirTemp("", "dogi_apt-cache")
 		dir, err := os.MkdirTemp(tempDirPtr, "dogi_apt-cache")
 		check(err)
-		defer os.RemoveAll(dir) // clean up
-
 		tmpfn := filepath.Join(dir, "Dockerfile")
 		check(os.WriteFile(tmpfn, []byte(assets.AptCacheDockerfile), 0666))
 		logger.Printf("temp dir: %s\n", dir)
@@ -274,6 +271,8 @@ func setAptCacher() string {
 			fmt.Println(string(out))
 			panic(err)
 		}
+
+		check(os.RemoveAll(dir)) // clean up
 	}
 
 	// launch apt-cacher container
@@ -320,8 +319,9 @@ func setAptCacher() string {
 	}
 
 	// find out apt-cacher ip
+	// is it possible to have multiple IPs for this container?
 	out, err := exec.Command("docker", "container",
-		"inspect", "-f", "{{ .NetworkSettings.IPAddress }}", contName).Output()
+		"inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", contName).Output()
 	if err != nil {
 		logger.Printf("container %s not found, launching...", contName)
 		_, err = exec.Command("docker",
@@ -786,12 +786,6 @@ Examples:
 				check(err)
 				logger.Println("create user script:", createUserFile.Name())
 				{
-					//logger.Println(strconv.FormatBool(setupSudoPtr))
-					var setupSudo bool = true
-					if noSetupSudoPtr {
-						setupSudo = false
-					}
-
 					groupsCmd := userSingleton().createGroupsCmd()
 					err := template.Must(template.New("").Option("missingkey=error").Parse(assets.CreateUserTemplate)).Execute(createUserFile,
 						map[string]string{"username": userObj.Username,
@@ -801,7 +795,6 @@ Examples:
 							"gnames":       groupsCmd.gnames,
 							"Name":         userObj.Name,
 							"createGroups": groupsCmd.cmd,
-							"setupSudo":    strconv.FormatBool(setupSudo),
 						})
 					check(err)
 				}
@@ -815,9 +808,7 @@ Examples:
 			if othPtr != "" {
 				// add final custom commands.
 				outStr := strings.Split(othPtr, " ")
-				for _, elmt := range outStr {
-					dockerRunArgs = append(dockerRunArgs, elmt)
-				}
+				dockerRunArgs = append(dockerRunArgs, outStr...)
 			}
 
 			dockerRunArgs = append(dockerRunArgs, imageName)
@@ -877,7 +868,6 @@ func init() {
 	runCmd.Flags().StringVar(&othPtr, "other", "", "add the following string to 'run' command.")
 	runCmd.Flags().StringVar(&devRMWPtr, "device-rmw", "", "add rmw rules to the following devices (as stated in https://stackoverflow.com/a/62758958). Format : <id_dev_a>;<id_dev_b>")
 	runCmd.Flags().StringVar(&devAccPtr, "device-access", "", "mount the following devices to container (through --device option). Format : <dev_name_a>;<dev_name_b>")
-	runCmd.Flags().BoolVar(&noSetupSudoPtr, "no-setup-sudo", false, "install inside containers various basic packages, such as apt-utils, sudo, tzdata, vim, or bash-completion.")
 	runCmd.Flags().StringVar(&tempDirPtr, "temp-dir", "", "temporary directory to use for dogi (default: $TMPDIR or /tmp, through empty command). Can be modified if there are access issues with this particular folder.")
 	runCmd.Flags().BoolVar(&noPIDIPCHostPtr, "no-pid-ipc-host", true, "don't launch with --pid=host --ipc=host.")
 
