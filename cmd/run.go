@@ -543,8 +543,12 @@ Examples:
 			bashCmdPath, err := exec.LookPath("bash")
 			check(err)
 
+			// if tempdir is not provided, use OS default
+			if tempDirPtr == "" {
+				tempDirPtr = os.TempDir()
+			}
+
 			// create xauth magic cookie file
-			//xauthfile, err := os.CreateTemp("", fmt.Sprintf(".%s*.xauth", appname))
 			xauthfile, err := os.CreateTemp(tempDirPtr, fmt.Sprintf(".%s*.xauth", appname))
 
 			check(err)
@@ -575,10 +579,6 @@ Examples:
 			logger.Printf("workdir: %s\n", workDirPtr)
 			mountStrs := []string{fmt.Sprintf("--volume=%s:%s", workDirPtr, workDirPtr)}
 
-			//cidFile := fmt.Sprintf("%s/.%s%v.cid", os.TempDir(), appname, rand.Int63())
-			if tempDirPtr == "" {
-				tempDirPtr = os.TempDir()
-			}
 			cidFile := fmt.Sprintf("%s/.%s%v.cid", tempDirPtr, appname, rand.Int63())
 			mountStrs = append(mountStrs, fmt.Sprintf("--cidfile=%s", cidFile))
 			mountStrs = append(mountStrs, fmt.Sprintf("--volume=%s:%s", cidFile, cidFileContainer))
@@ -637,12 +637,13 @@ Examples:
 			if !noNethostPtr {
 				logger.Println("adding --network=host")
 				dockerRunArgs = append(dockerRunArgs, "--network=host")
-				if noPIDIPCHostPtr {
-					// useful for https://github.com/eProsima/Fast-DDS/issues/2956
-					logger.Println("add --pid=host --ipc=host, to disable use --no-pid-ipc-host")
-					dockerRunArgs = append(dockerRunArgs, "--pid=host")
-					dockerRunArgs = append(dockerRunArgs, "--ipc=host")
-				}
+			}
+
+			if !noPIDIPCHostPtr {
+				// useful for https://github.com/eProsima/Fast-DDS/issues/2956
+				logger.Println("add --pid=host --ipc=host, to disable use --no-pid-ipc-host")
+				dockerRunArgs = append(dockerRunArgs, "--pid=host")
+				dockerRunArgs = append(dockerRunArgs, "--ipc=host")
 			}
 
 			if privilegedPtr {
@@ -869,6 +870,6 @@ func init() {
 	runCmd.Flags().StringVar(&devRMWPtr, "device-rmw", "", "add rmw rules to the following devices (as stated in https://stackoverflow.com/a/62758958). Format : <id_dev_a>;<id_dev_b>")
 	runCmd.Flags().StringVar(&devAccPtr, "device-access", "", "mount the following devices to container (through --device option). Format : <dev_name_a>;<dev_name_b>")
 	runCmd.Flags().StringVar(&tempDirPtr, "temp-dir", "", "temporary directory to use for dogi (default: $TMPDIR or /tmp, through empty command). Can be modified if there are access issues with this particular folder.")
-	runCmd.Flags().BoolVar(&noPIDIPCHostPtr, "no-pid-ipc-host", true, "don't launch with --pid=host --ipc=host.")
+	runCmd.Flags().BoolVar(&noPIDIPCHostPtr, "no-pid-ipc-host", false, "don't launch with --pid=host --ipc=host.")
 
 }
