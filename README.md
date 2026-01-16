@@ -14,7 +14,6 @@ It allows using rootless containers, running GUIs, quickly mounting your current
 
 Even though **dogi** was originally inspired by [rocker](https://github.com/osrf/rocker) and solves a similar problem (or the same), it aims to do so with minimum user effort. Additionally, it provides the ability to interact with the `docker` client directly ([transparent](#design-principles)).
 
-## Quickstart
 
 ```bash
 # install binary
@@ -34,6 +33,22 @@ dogi update
 Some [optional setup steps](#optional-setup-steps) might be required.
 
 **NOTE:** You can also install from source: `CGO_ENABLED=0 go install -a github.com/ntorresalberto/dogi@latest`
+
+### Requirements
+
+**dogi** relies on the docker engine CLI for its operations. Before using dogi, make sure:
+
+* You have installed [docker engine via the official guide](https://docs.docker.com/engine/install/ubuntu/). Docker installed through snap won't work, because **dogi** sometimes creates files and uses `/tmp`.
+* You have the correct permissions to call docker cli withotu sudo. This can be setup with the [post-installation steps](https://docs.docker.com/engine/install/linux-postinstall/).
+* In order to use docker (and **dogi**) with GPU support, you must first [follow the installation prerequisites instructions](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#prerequisites), and the [configuration instructions](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration). Otherwise, the following bug will appears :
+
+```
+docker : Error response from daemon: unknown or invalid runtime name: nvidia
+```
+
+## Quickstart
+
+
 
 ---
 
@@ -115,7 +130,7 @@ You should find **dogi** useful if you:
 
 - **transparent**: **dogi** forwards any unrecognized arguments to docker, in case you ever need to do anything not currently supported.
 - **simple**: aims to cover the most common use cases with the least user intervention (you shouldn't need to pass any extra flags/options most of the time). If you don't agree with the defaults, [please say so](https://github.com/ntorresalberto/dogi/issues/new).
-- **secure**: there are [many ways](http://wiki.ros.org/docker/Tutorials/GUI) to expose the xorg server to containers, **dogi** tries to do it in the most secure way. Additionally, it proposes an easy way to avoid the potentially dangerous practice of root containers. 
+- **secure**: there are [many ways](http://wiki.ros.org/docker/Tutorials/GUI) to expose the xorg server to containers, **dogi** tries to do it in the most secure way. Additionally, it proposes an easy way to avoid the potentially dangerous practice of root containers.
 - **minimalist**: **dogi** thrives to have the least amount of dependencies and not do more than it needs.
 
 > Many (open source) hackers are proud if they achieve large amounts of code, because they believe the more lines of code they've written, the more progress they have made. The more progress they have made, the more skilled they are. This is simply a delusion.
@@ -124,7 +139,8 @@ You should find **dogi** useful if you:
 
 ### Limitations
 
-- Only supports ubuntu-based images (because of apt commands used)
+- Only supports debian-based images like ubuntu (because of apt commands used) and more recently fedora.
+
 - Only supports X11 environments for GUI applications (because of xorg socket communication)
 
 <hr style="border:4px solid blue">
@@ -174,4 +190,3 @@ source .bashrc
 
 This error is usually caused by a container running an older version of glibc than your host system (where you compiled `dogi`).
 A possible cause of this is you didn't use `CGO_ENABLED=0` in the `go install`, as specified in #quickstart.
-

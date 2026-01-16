@@ -11,9 +11,19 @@
 # add this to container:
 # echo 'Acquire::http { Proxy "http://localhost:3142"; };' >> /etc/apt/apt.conf.d/01proxy
 # echo 'Acquire::http { Proxy "http://172.17.0.2:3142"; };' >> /etc/apt/apt.conf.d/01proxy
-FROM   ubuntu:22.04
+FROM ubuntu:22.04
 
 VOLUME ["/var/cache/apt-cacher-ng"]
+
+# TODO left commented until we can confirm this is a workaround
+# ## Added : Try to clean everything (for bug : apt-get BADSIG GPG)
+# RUN apt-get clean && \
+#     cd /var/lib/apt &&\
+#     mv lists lists.old &&\
+#     mkdir -p lists/partial && \
+#     apt-get clean &&\
+#     apt-get update -qq -y
+
 RUN    apt-get update && apt-get install -y apt-cacher-ng \
     && sed -i 's/\# PassThroughPattern: \.\*/PassThroughPattern: \.\*/g' /etc/apt-cacher-ng/acng.conf
 

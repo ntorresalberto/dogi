@@ -118,8 +118,12 @@ var (
 	noUSBPtr         bool
 	noNethostPtr     bool
 	noCacherPtr      bool
+	noPIDIPCHostPtr  bool
 	workDirPtr       string
 	contNamePtr      string
+	devAccPtr        string
+	devRMWPtr        string
+	tempDirPtr       string
 	logger           = log.New(os.Stdout, appname+": ", log.Lmsgprefix)
 	dockerRunArgs    = []string{
 		"--interactive",
@@ -186,7 +190,7 @@ Examples:
 
 func panicKey(key string, mapWithoutKey map[string]string) {
 	if _, ok := mapWithoutKey[key]; ok {
-		panic(fmt.Errorf("%s should not exist in this dictionary\n", key))
+		panic(fmt.Errorf("%s should not exist in this dictionary", key))
 	}
 }
 

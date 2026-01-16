@@ -222,6 +222,13 @@ func imageDistro(imageName string) string {
 	out, err := exec.Command("docker", "run", "--rm", "--tty",
 		"--entrypoint=cat",
 		imageName, "/etc/os-release").Output()
+	if err != nil {
+		logger.Println("Error: failed to verify image distro:")
+		logger.Printf("image: %s\n", imageName)
+		logger.Printf("error: %s\n", err.Error())
+		logger.Printf("Please share this log the %s devs at:\n", appname)
+		logger.Fatalf("https://github.com/ntorresalberto/dogi/issues/new")
+	}
 	check(err)
 
 	for _, val := range supportedDistros() {
@@ -248,10 +255,9 @@ func setAptCacher() string {
 	{
 		logger.Printf("build apt cacher image: %s\n", imgName)
 		// build apt-cache-ng image
-		dir, err := os.MkdirTemp("", "dogi_apt-cache")
+		//dir, err := os.MkdirTemp("", "dogi_apt-cache")
+		dir, err := os.MkdirTemp(tempDirPtr, "dogi_apt-cache")
 		check(err)
-		defer os.RemoveAll(dir) // clean up
-
 		tmpfn := filepath.Join(dir, "Dockerfile")
 		check(os.WriteFile(tmpfn, []byte(assets.AptCacheDockerfile), 0666))
 		logger.Printf("temp dir: %s\n", dir)
@@ -265,6 +271,8 @@ func setAptCacher() string {
 			fmt.Println(string(out))
 			panic(err)
 		}
+
+		check(os.RemoveAll(dir)) // clean up
 	}
 
 	// launch apt-cacher container
@@ -311,8 +319,9 @@ func setAptCacher() string {
 	}
 
 	// find out apt-cacher ip
+	// is it possible to have multiple IPs for this container?
 	out, err := exec.Command("docker", "container",
-		"inspect", "-f", "{{ .NetworkSettings.IPAddress }}", contName).Output()
+		"inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", contName).Output()
 	if err != nil {
 		logger.Printf("container %s not found, launching...", contName)
 		_, err = exec.Command("docker",
@@ -337,7 +346,7 @@ func setAptCacher() string {
 
 	aptCacherConf := fmt.Sprintf("Acquire::http { Proxy \"http://%s:3142\"; };", ip)
 
-	aptCacherFile, err := os.CreateTemp("", fmt.Sprintf(".%s_%s_*", appname, baseName))
+	aptCacherFile, err := os.CreateTemp(tempDirPtr, fmt.Sprintf(".%s_%s_*", appname, baseName))
 	check(err)
 	logger.Printf("apt-cacher file: %s", aptCacherFile.Name())
 	check(os.WriteFile(aptCacherFile.Name(), []byte(aptCacherConf), 0666))
@@ -478,6 +487,11 @@ const runExamples = `
   - Launch an 3D accelerated GUI (opengl)
 
  {{.appname}} run ubuntu -- bash -c "sudo apt install -y mesa-utils && glxgears"
+
+  - Add access to a webcam (ex : /dev/video0) : 
+
+	{{.appname}} run ubuntu --device-access "/dev/video0"
+
 `
 
 var (
@@ -529,8 +543,14 @@ Examples:
 			bashCmdPath, err := exec.LookPath("bash")
 			check(err)
 
+			// if tempdir is not provided, use OS default
+			if tempDirPtr == "" {
+				tempDirPtr = os.TempDir()
+			}
+
 			// create xauth magic cookie file
-			xauthfile, err := os.CreateTemp("", fmt.Sprintf(".%s*.xauth", appname))
+			xauthfile, err := os.CreateTemp(tempDirPtr, fmt.Sprintf(".%s*.xauth", appname))
+
 			check(err)
 			logger.Println("temp xauth file:", xauthfile.Name())
 			addCopyToContainerFile(xauthfile.Name(), "/.xauth")
@@ -559,7 +579,7 @@ Examples:
 			logger.Printf("workdir: %s\n", workDirPtr)
 			mountStrs := []string{fmt.Sprintf("--volume=%s:%s", workDirPtr, workDirPtr)}
 
-			cidFile := fmt.Sprintf("%s/.%s%v.cid", os.TempDir(), appname, rand.Int63())
+			cidFile := fmt.Sprintf("%s/.%s%v.cid", tempDirPtr, appname, rand.Int63())
 			mountStrs = append(mountStrs, fmt.Sprintf("--cidfile=%s", cidFile))
 			mountStrs = append(mountStrs, fmt.Sprintf("--volume=%s:%s", cidFile, cidFileContainer))
 
@@ -617,6 +637,13 @@ Examples:
 			if !noNethostPtr {
 				logger.Println("adding --network=host")
 				dockerRunArgs = append(dockerRunArgs, "--network=host")
+			}
+
+			if !noPIDIPCHostPtr {
+				// useful for https://github.com/eProsima/Fast-DDS/issues/2956
+				logger.Println("add --pid=host --ipc=host, to disable use --no-pid-ipc-host")
+				dockerRunArgs = append(dockerRunArgs, "--pid=host")
+				dockerRunArgs = append(dockerRunArgs, "--ipc=host")
 			}
 
 			if privilegedPtr {
@@ -708,6 +735,24 @@ Examples:
 					"--volume=/dev/bus/usb:/dev/bus/usb")
 				dockerRunArgs = append(dockerRunArgs,
 					"--device-cgroup-rule=c 189:* rmw")
+
+				// add commands to add rules to specific usb devices (as stated by https://stackoverflow.com/a/62758958)
+				if devRMWPtr != "" {
+					var indexes = strings.Split(devRMWPtr, ";")
+					for i := 0; i < len(indexes); i++ {
+						var s = "--device-cgroup-rule=c " + indexes[i] + ":* rmw"
+						dockerRunArgs = append(dockerRunArgs, s)
+					}
+				}
+				// add rules to mount specific usb devices
+				if devAccPtr != "" {
+					var indexes = strings.Split(devAccPtr, ";")
+					for i := 0; i < len(indexes); i++ {
+						var s = "--device=" + indexes[i]
+						dockerRunArgs = append(dockerRunArgs, s)
+					}
+				}
+
 			}
 
 			if !noUserPtr && userObj.Uid == "0" {
@@ -735,7 +780,9 @@ Examples:
 
 				// TODO: createUser file won't be removed because
 				// process is replaced at Exec, is there a way?
-				createUserFile, err := os.CreateTemp("",
+				// createUserFile, err := os.CreateTemp("",
+				// 	fmt.Sprintf(".%s*.sh", appname))
+				createUserFile, err := os.CreateTemp(tempDirPtr,
 					fmt.Sprintf(".%s*.sh", appname))
 				check(err)
 				logger.Println("create user script:", createUserFile.Name())
@@ -813,4 +860,9 @@ func init() {
 	runCmd.Flags().BoolVar(&noRMPtr, "no-rm", false, "don't launch with --rm (container will exist after exiting)")
 	runCmd.Flags().BoolVar(&noUSBPtr, "no-usb", false, "don't mount usb devices")
 	runCmd.Flags().BoolVar(&noNethostPtr, "no-nethost", false, "don't launch with --network=host")
+	runCmd.Flags().StringVar(&devRMWPtr, "device-rmw", "", "add rmw rules to the following devices (as stated in https://stackoverflow.com/a/62758958). Format : <id_dev_a>;<id_dev_b>")
+	runCmd.Flags().StringVar(&devAccPtr, "device-access", "", "mount the following devices to container (through --device option). Format : <dev_name_a>;<dev_name_b>")
+	runCmd.Flags().StringVar(&tempDirPtr, "temp-dir", "", "temporary directory to use for dogi (default: $TMPDIR or /tmp, through empty command). Can be modified if there are access issues with this particular folder.")
+	runCmd.Flags().BoolVar(&noPIDIPCHostPtr, "no-pid-ipc-host", false, "don't launch with --pid=host --ipc=host.")
+
 }
