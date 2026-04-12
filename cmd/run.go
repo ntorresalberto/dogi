@@ -131,6 +131,13 @@ type contState struct {
 	exists, running bool
 }
 
+func dockerImagefromLine(imgline string) (string, string) {
+	fields := strings.Fields(imgline)
+	imgtag := fields[0]
+	imghash := fields[1]
+	return imgtag, imghash
+}
+
 func imagesStartingWith(toComplete string) []string {
 	out, err := exec.Command("docker", "images").Output()
 	check(err)
@@ -138,12 +145,18 @@ func imagesStartingWith(toComplete string) []string {
 	imglines := strings.Split(
 		strings.TrimSpace(string(out[:])), "\n")
 	images := []string{}
-	for _, imgline := range imglines {
-		fields := strings.Fields(imgline)
-		imgtag := fields[0] + ":" + fields[1]
+
+	for _, imgline := range imglines[1:] {
+		imgtag, _ := dockerImagefromLine(imgline)
+
+		// add images by name:tag
 		if strings.HasPrefix(imgtag, toComplete) {
 			images = append(images, imgtag)
 		}
+		// ignore images by hash for now
+		// if strings.HasPrefix(imghash, toComplete) {
+		// 	images = append(images, imghash)
+		// }
 	}
 	return images
 }
@@ -171,7 +184,7 @@ func selectImage() string {
 		logger.Fatalf("select image failed")
 	}
 
-	imageId := strings.Fields(result)[2]
+	imageId, _ := dockerImagefromLine(result)
 
 	return imageId
 }
