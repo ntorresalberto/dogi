@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
+	"mvdan.cc/sh/v3/shell"
 	"os"
 	"os/exec"
 	"os/user"
@@ -821,6 +822,16 @@ Examples:
 				entrypoint = merge([]string{"bash", createUserScriptPath}, execCommand)
 			}
 
+			if extraArgsPtr != "" {
+				outStr, err := shell.Fields(extraArgsPtr, nil)
+				check(err)
+				logger.Println("found --extra-args:")
+				for _, arg := range outStr {
+					logger.Printf("  %s\n", arg)
+				}
+				dockerRunArgs = append(dockerRunArgs, outStr...)
+			}
+
 			dockerRunArgs = append(dockerRunArgs, imageName)
 			// run command end
 			// ********************************************************
@@ -878,6 +889,7 @@ func init() {
 	runCmd.Flags().StringVar(&devRMWPtr, "device-rmw", "", "add rmw rules to the following devices (as stated in https://stackoverflow.com/a/62758958). Format : <id_dev_a>;<id_dev_b>")
 	runCmd.Flags().StringVar(&devAccPtr, "device-access", "", "mount the following devices to container (through --device option). Format : <dev_name_a>;<dev_name_b>")
 	runCmd.Flags().StringVar(&tempDirPtr, "temp-dir", "", "temporary directory to use for dogi (default: $TMPDIR or /tmp, through empty command). Can be modified if there are access issues with this particular folder.")
+	runCmd.Flags().StringVar(&extraArgsPtr, "extra-args", "", "pass unmodified arguments directly to docker create.")
 	runCmd.Flags().BoolVar(&noPIDIPCHostPtr, "no-pid-ipc-host", false, "don't launch with --pid=host --ipc=host.")
 
 }
