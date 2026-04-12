@@ -320,8 +320,11 @@ func setAptCacher() string {
 
 	// find out apt-cacher ip
 	// is it possible to have multiple IPs for this container?
-	out, err := exec.Command("docker", "container",
-		"inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", contName).Output()
+	apt_cacher_ip_func := func() ([]byte, error) {
+		return exec.Command("docker", "container",
+			"inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", contName).Output()
+	}
+	out, err := apt_cacher_ip_func()
 	if err != nil {
 		logger.Printf("container %s not found, launching...", contName)
 		_, err = exec.Command("docker",
@@ -334,8 +337,7 @@ func setAptCacher() string {
 		logger.Printf("apt-cacher container started")
 		check(err)
 
-		out, err = exec.Command("docker", "container",
-			"inspect", "-f", "{{ .NetworkSettings.IPAddress }}", contName).Output()
+		out, err = apt_cacher_ip_func()
 		check(err)
 	}
 	ip := strings.TrimSpace(string(out[:]))
