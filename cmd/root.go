@@ -119,6 +119,7 @@ var (
 	noNethostPtr     bool
 	noCacherPtr      bool
 	noPIDIPCHostPtr  bool
+	extraArgsPtr     string
 	workDirPtr       string
 	contNamePtr      string
 	devAccPtr        string
