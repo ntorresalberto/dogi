@@ -280,7 +280,7 @@ func setAptCacher() string {
 		cmd := exec.Command("docker",
 			"build", "--progress=plain", "-t", imgName, ".")
 		cmd.Dir = dir
-		out, err := cmd.Output()
+		out, err := cmd.CombinedOutput()
 		if err != nil {
 			fmt.Println(string(out))
 			panic(err)
