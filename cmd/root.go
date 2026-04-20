@@ -117,7 +117,8 @@ var (
 	noRMPtr          bool
 	noUSBPtr         bool
 	noNethostPtr     bool
-	noCacherPtr      bool
+	disableCacherPtr bool
+	forceCacherPtr   bool
 	noPIDIPCHostPtr  bool
 	extraArgsPtr     string
 	workDirPtr       string
